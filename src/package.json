@@ -1,0 +1,13 @@
+{
+  "name": "church-booking-backend",
+  "version": "1.0.0",
+  "description": "Church booking backend API",
+  "type": "module",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "nodemon src/app.js",
+    "start": "node src/app.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

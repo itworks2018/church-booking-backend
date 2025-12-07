@@ -1,0 +1,11 @@
+{
+  "watch": ["src"],
+  "ext": "js,mjs,cjs,json",
+  "ignore": ["node_modules"],
+  "script": "src/app.js",
+  "exec": "node",
+  "delay": 500,
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
