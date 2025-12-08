@@ -10,6 +10,8 @@ import { requireAuth, requireAdmin } from './middlewares/authMiddleware.js'
 import { supabase } from './config/supabase.js'
 import errorHandler from './middlewares/errorHandler.js'
 import authRoutes from './routes/auth.js'
+import profilesRouter from './routes/profiles.js'
+app.use('/api/profiles', profilesRouter)
 
 // ✅ Create Express app FIRST
 const app = express()
