@@ -1,72 +1,76 @@
 import express from 'express'
 import { supabase } from '../config/supabase.js'
-import { requireAuth, requireAdmin } from '../middlewares/authMiddleware.js'
+import { authenticateToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
-// Create booking
-router.post('/', requireAuth, async (req, res) => {
-  const { venue_id, event_name, event_purpose, start_datetime, end_datetime } = req.body
+// ✅ CREATE BOOKING (User must be logged in)
+router.post('/create', authenticateToken, async (req, res) => {
+  const userId = req.user.id
+  const { venue, date, time, notes } = req.body
 
-  if (new Date(start_datetime) >= new Date(end_datetime)) {
-    return res.status(400).json({ error: 'Start time must be before end time' })
+  // Validate input
+  if (!venue || !date || !time) {
+    return res.status(400).json({ error: 'Missing required fields' })
+  }
+
+  // Insert booking into Supabase
+  const { data, error } = await supabase
+    .from('bookings')
+    .insert([
+      {
+        user_id: userId,
+        venue,
+        date,
+        time,
+        notes: notes || ''
+      }
+    ])
+    .select()
+
+  if (error) {
+    return res.status(400).json({ error: error.message })
+  }
+
+  return res.json({ booking: data[0] })
+})
+
+
+// ✅ GET USER'S OWN BOOKINGS
+router.get('/my-bookings', authenticateToken, async (req, res) => {
+  const userId = req.user.id
+
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: true })
+
+  if (error) {
+    return res.status(400).json({ error: error.message })
+  }
+
+  return res.json({ bookings: data })
+})
+
+
+// ✅ ADMIN: GET ALL BOOKINGS
+router.get('/all', authenticateToken, async (req, res) => {
+  // Only allow admins
+  if (req.user.email !== process.env.ADMIN_EMAIL) {
+    return res.status(403).json({ error: 'Forbidden: Admins only' })
   }
 
   const { data, error } = await supabase
     .from('bookings')
-    .insert([{
-      user_id: req.user.id,
-      venue_id,
-      event_name,
-      event_purpose,
-      start_datetime,
-      end_datetime
-    }])
+    .select('*')
+    .order('date', { ascending: true })
 
-  if (error) return res.status(400).json({ error: error.message })
-  res.json(data)
-})
+  if (error) {
+    return res.status(400).json({ error: error.message })
+  }
 
-// User: my bookings
-router.get('/me', requireAuth, async (req, res) => {
-  const { data, error } = await supabase
-    .from('bookings')
-    .select('*, venues(name, area)')
-    .eq('user_id', req.user.id)
-    .order('start_datetime')
-
-  if (error) return res.status(400).json({ error: error.message })
-  res.json(data)
-})
-
-// Admin: all bookings
-router.get('/', requireAuth, requireAdmin, async (req, res) => {
-  const { status } = req.query
-
-  let query = supabase
-    .from('bookings')
-    .select('*, profiles(name), venues(name, area)')
-    .order('start_datetime')
-
-  if (status) query = query.eq('status', status)
-
-  const { data, error } = await query
-
-  if (error) return res.status(400).json({ error: error.message })
-  res.json(data)
-})
-
-// Admin: update status
-router.put('/:id/status', requireAuth, requireAdmin, async (req, res) => {
-  const { status } = req.body
-
-  const { data, error } = await supabase
-    .from('bookings')
-    .update({ status })
-    .eq('id', req.params.id)
-
-  if (error) return res.status(400).json({ error: error.message })
-  res.json(data)
+  return res.json({ bookings: data })
 })
 
 export default router

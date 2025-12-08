@@ -1,6 +1,8 @@
 // Load environment variables first
 import 'dotenv/config'
+import bookingsRouter from './routes/bookings.js'
 
+app.use('/api/bookings', bookingsRouter)
 import express from 'express'
 import cors from 'cors'
 import { createClient } from '@supabase/supabase-js'
