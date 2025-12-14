@@ -11,7 +11,7 @@ import jwt from 'jsonwebtoken';
 // Supabase client (service)
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY // use service key on backend
+  process.env.SUPABASE_SERVICE_ROLE_KEY // use service key on backend
 );
 
 // Auth client (anon key) for Supabase Auth
