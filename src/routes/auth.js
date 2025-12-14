@@ -6,19 +6,43 @@ const router = express.Router()
 
 // SIGNUP
 router.post('/signup', async (req, res) => {
-  const { email, password } = req.body
+  const { full_name, email, contact_number, role, password } = req.body;
 
-  const { data, error } = await supabase.auth.signUp({
+  // ✅ 1. Create user in Supabase Auth
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password
-  })
+  });
 
-  if (error) {
-    return res.status(400).json({ error: error.message })
+  if (authError) {
+    return res.status(400).json({ error: authError.message });
   }
 
-  return res.json({ user: data.user })
-})
+  const userId = authData.user.id;
+
+  // ✅ 2. Insert into your custom users table
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .insert([
+      {
+        id: userId,
+        full_name,
+        email,
+        contact_number,
+        role
+      }
+    ])
+    .select();
+
+  if (userError) {
+    return res.status(400).json({ error: userError.message });
+  }
+
+  return res.json({
+    message: "User registered successfully",
+    user: userData[0]
+  });
+});
 
 // LOGIN
 router.post('/login', async (req, res) => {
