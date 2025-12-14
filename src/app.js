@@ -16,12 +16,12 @@ const {
   PORT
 } = process.env;
 
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY || !SUPABASE_ANON_KEY || !JWT_SECRET) {
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY || !JWT_SECRET) {
   throw new Error("Missing required Supabase or JWT environment variables.");
 }
 
 // ✅ SUPABASE CLIENTS
-const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 const auth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ✅ CORS (supports multiple origins + credentials)
