@@ -20,27 +20,28 @@ router.post('/signup', async (req, res) => {
 
   const userId = authData.user.id;
 
-  // ✅ 2. Insert into your custom users table
-  const { data: userData, error: userError } = await supabase
-    .from('users')
+  // ✅ 2. Insert into your custom profiles table
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
     .insert([
       {
-        user_id: userId,
-        full_name,
-        email,
-        contact_number,
+        id: userId, // Match the 'profiles' table's primary key
+        name: full_name, // Match the 'name' column
         role
+        // email and contact_number are not in the profiles table schema
       }
     ])
     .select();
 
-  if (userError) {
-    return res.status(400).json({ error: userError.message });
+  if (profileError) {
+    // Log the detailed error to the console for debugging
+    console.error('Error creating profile:', profileError);
+    return res.status(400).json({ error: 'Failed to create profile.' });
   }
 
   return res.json({
     message: "User registered successfully",
-    user: userData[0]
+    user: profileData[0]
   });
 });
 
