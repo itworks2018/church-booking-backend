@@ -101,7 +101,7 @@ app.post("/api/auth/signup", authLimiter, async (req, res) => {
 
     // 2) Insert into the correct 'users' table
     const { error: profileErr } = await db.from("users").insert([
-      { id: user.id, full_name, email, contact_number, role }
+      { user_id: user.id, full_name, email, contact_number, role }
     ]);
 
     if (profileErr) {
@@ -140,7 +140,7 @@ app.post("/api/auth/login", authLimiter, async (req, res) => {
     const { data: profile } = await db
       .from("users")
       .select("*")
-      .eq("id", data.user.id)
+      .eq("user_id", data.user.id)
       .single();
 
     const token = signToken({
