@@ -28,7 +28,8 @@ const auth = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const allowedOrigins = [
   "http://localhost:5500",
   "http://localhost:5173",
-  "https://church-booking-frontend-gamma.vercel.app"
+  "https://church-booking-frontend-gamma.vercel.app",
+  "https://church-booking-frontend-git-main-jey-tutorials-projects.vercel.app"
 ];
 
 app.use(
@@ -92,14 +93,16 @@ app.post("/api/auth/signup", authLimiter, async (req, res) => {
 
     const user = data.user;
 
-    // 2) Insert profile
+    // 2) Insert into the correct 'users' table
     const { error: profileErr } = await db.from("users").insert([
       { id: user.id, full_name, email, contact_number, role }
     ]);
 
     if (profileErr) {
-      await auth.auth.admin.deleteUser(user.id).catch(() => {});
-      return res.status(500).json({ error: "Failed to create profile" });
+      // If profile insert fails, roll back the auth user creation
+      await auth.auth.admin.deleteUser(user.id).catch(console.error);
+      console.error("Error inserting profile:", profileErr);
+      return res.status(500).json({ error: "Failed to create profile." });
     }
 
     return res.status(201).json({

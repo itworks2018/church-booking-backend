@@ -20,35 +20,36 @@ router.post('/signup', async (req, res) => {
 
   const userId = authData.user.id;
 
-  // ✅ 2. Insert into your custom profiles table
-  const { data: profileData, error: profileError } = await supabase
-    .from('profiles')
+  // ✅ 2. Insert into your custom users table
+  const { data: userData, error: userError } = await supabase
+    .from('users')
     .insert([
       {
-        id: userId, // Match the 'profiles' table's primary key
-        name: full_name, // Match the 'name' column
+        id: userId,
+        full_name,
+        email,
+        contact_number,
         role
-        // email and contact_number are not in the profiles table schema
       }
     ])
     .select();
 
-  if (profileError) {
+  if (userError) {
     // Log the detailed error to the console for debugging
-    console.error('Error creating profile:', profileError);
+    console.error('Error creating user profile:', userError);
     // Use 500 for internal server/database errors
-    return res.status(500).json({ error: 'Failed to create profile due to a database error.' });
+    return res.status(500).json({ error: 'Failed to create user profile due to a database error.' });
   }
 
-  // ✅ 3. Verify that the profile was created and returned
-  if (!profileData || profileData.length === 0) {
-    console.error('Profile created but could not be selected. Check Supabase RLS policies for the profiles table.');
-    return res.status(500).json({ error: 'Failed to create profile. Please check server logs and database permissions.' });
+  // ✅ 3. Verify that the user profile was created and returned
+  if (!userData || userData.length === 0) {
+    console.error('User profile created but could not be selected. Check Supabase RLS policies for the users table.');
+    return res.status(500).json({ error: 'Failed to create user profile. Please check server logs and database permissions.' });
   }
 
   return res.json({
     message: "User registered successfully",
-    user: profileData[0]
+    user: userData[0]
   });
 });
 
