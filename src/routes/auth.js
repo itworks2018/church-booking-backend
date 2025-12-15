@@ -25,7 +25,7 @@ router.post('/signup', async (req, res) => {
     .from('users')
     .insert([
       {
-        id: userId,
+        user_id: userId,
         full_name,
         email,
         contact_number,

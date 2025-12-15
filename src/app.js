@@ -91,6 +91,11 @@ app.post("/api/auth/signup", authLimiter, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
 
+    // ✅ Defensively check for a null user object to prevent crashes
+    if (!data.user) {
+      return res.status(400).json({ error: "User creation failed unexpectedly. The user may already exist or email confirmation is pending." });
+    }
+
     const user = data.user;
 
     // 2) Insert into the correct 'users' table
@@ -100,7 +105,8 @@ app.post("/api/auth/signup", authLimiter, async (req, res) => {
 
     if (profileErr) {
       // If profile insert fails, roll back the auth user creation
-      await auth.auth.admin.deleteUser(user.id).catch(console.error);
+      // Use the 'db' client which has the service_role_key for admin operations
+      await db.auth.admin.deleteUser(user.id).catch(console.error);
       console.error("Error inserting profile:", profileErr);
       return res.status(500).json({ error: "Failed to create profile." });
     }
