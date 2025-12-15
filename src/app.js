@@ -115,6 +115,7 @@ app.post("/api/auth/signup", authLimiter, async (req, res) => {
       message: "Account created. Please verify email if required."
     });
   } catch (err) {
+    console.error("Unhandled signup error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 });
