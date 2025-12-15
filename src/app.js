@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 import { createClient } from "@supabase/supabase-js";
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
 
 // ✅ ENVIRONMENT VALIDATION
