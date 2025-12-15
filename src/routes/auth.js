@@ -36,7 +36,14 @@ router.post('/signup', async (req, res) => {
   if (profileError) {
     // Log the detailed error to the console for debugging
     console.error('Error creating profile:', profileError);
-    return res.status(400).json({ error: 'Failed to create profile.' });
+    // Use 500 for internal server/database errors
+    return res.status(500).json({ error: 'Failed to create profile due to a database error.' });
+  }
+
+  // ✅ 3. Verify that the profile was created and returned
+  if (!profileData || profileData.length === 0) {
+    console.error('Profile created but could not be selected. Check Supabase RLS policies for the profiles table.');
+    return res.status(500).json({ error: 'Failed to create profile. Please check server logs and database permissions.' });
   }
 
   return res.json({
