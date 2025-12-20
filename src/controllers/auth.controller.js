@@ -12,13 +12,14 @@ const signToken = (payload) =>
 export const signup = async (req, res) => {
   const { full_name, email, contact_number, role, password } = req.body;
 
-  // Roles MUST match frontend values
+  // Roles MUST match Supabase ENUM + frontend values
   const allowedRoles = [
-    "DGroup Leader",
-    "Ministry Head",
-    "DGroup Member",
-    "COS",
-    "Ministry Assistants",
+    "dgroup_leader",
+    "ministry_head",
+    "dgroup_member",
+    "cos",
+    "new_member",
+    "admin",
   ];
 
   if (!full_name || !email || !contact_number || !password || !role)
@@ -29,7 +30,7 @@ export const signup = async (req, res) => {
   }
 
   try {
-    // 1) Create Supabase Auth user (anon key)
+    // 1) Create Supabase Auth user
     const { data, error } = await auth.auth.signUp({
       email,
       password,
@@ -47,7 +48,7 @@ export const signup = async (req, res) => {
 
     const user = data.user;
 
-    // 2) Insert into users table (service role key)
+    // 2) Insert into public.users (service role key)
     const { error: profileErr } = await db
       .from("users")
       .insert([
@@ -56,12 +57,12 @@ export const signup = async (req, res) => {
           full_name,
           email,
           contact_number,
-          role,
+          role, // now matches ENUM
         },
       ]);
 
     if (profileErr) {
-      // Rollback using the AUTH client with service role key
+      // Rollback auth user
       await auth.auth.admin.deleteUser(user.id).catch(console.error);
 
       console.error("Error inserting profile:", profileErr);
