@@ -7,17 +7,32 @@ const signToken = (payload) =>
   jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 
 export const signup = async (req, res) => {
-  const { full_name, email, contact_number, password } = req.body;
+  const { full_name, email, contact_number, role, password } = req.body;
 
-  if (!full_name || !email || !contact_number || !password)
+  // Define the list of roles that users are allowed to select
+  const allowedRoles = [
+    "dgroup_leader",
+    "ministry_head",
+    "dgroup_member",
+    "cos",
+    "ministry_assistant",
+  ];
+
+  if (!full_name || !email || !contact_number || !password || !role)
     return res.status(400).json({ error: "All fields are required" });
+
+  // Security Validation: Ensure the provided role is in the allow-list
+  if (!allowedRoles.includes(role)) {
+    return res.status(400).json({ error: "Invalid role selected." });
+  }
 
   try {
     // 1) Create Supabase Auth user
     const { data, error } = await auth.auth.signUp({
       email,
       password,
-      options: { data: { full_name, contact_number } },
+      // We pass the user-provided data here, which will be stored in auth.users.raw_user_meta_data
+      options: { data: { full_name, contact_number, role } },
     });
 
     if (error) return res.status(400).json({ error: error.message });
@@ -32,16 +47,15 @@ export const signup = async (req, res) => {
 
     const user = data.user;
 
-    // 2) Insert into the correct 'users' table
+    // 2) Insert into our public 'users' table, using the validated role
     const { error: profileErr } = await db
       .from("users")
       .insert([
-        { user_id: user.id, full_name, email, contact_number, role: "user" },
+        { user_id: user.id, full_name, email, contact_number, role: role },
       ]);
 
     if (profileErr) {
-      // If profile insert fails, roll back the auth user creation
-      // Use the 'db' client which has the service_role_key for admin operations
+      // If profile insert fails, roll back the auth user creation for consistency
       await db.auth.admin.deleteUser(user.id).catch(console.error);
       console.error("Error inserting profile:", profileErr);
       return res.status(500).json({ error: "Failed to create profile." });
