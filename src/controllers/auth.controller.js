@@ -6,6 +6,9 @@ const { JWT_SECRET } = process.env;
 const signToken = (payload) =>
   jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 
+// =========================
+// SIGNUP
+// =========================
 export const signup = async (req, res) => {
   const { full_name, email, contact_number, role, password } = req.body;
 
@@ -70,6 +73,51 @@ export const signup = async (req, res) => {
       .json({ message: "Account created. Please verify email if required." });
   } catch (err) {
     console.error("Unhandled signup error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
+// =========================
+// LOGIN
+// =========================
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password)
+    return res.status(400).json({ error: "Email and password required" });
+
+  try {
+    const { data, error } = await auth.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user)
+      return res.status(401).json({ error: "Invalid credentials" });
+
+    const { data: profile } = await db
+      .from("users")
+      .select("*")
+      .eq("user_id", data.user.id)
+      .single();
+
+    const token = signToken({
+      id: data.user.id,
+      email: data.user.email,
+      role: profile?.role || "user",
+    });
+
+    return res.json({
+      token,
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        full_name: profile?.full_name,
+        role: profile?.role,
+      },
+    });
+  } catch (err) {
+    console.error("Login error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };
