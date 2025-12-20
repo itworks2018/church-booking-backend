@@ -1,9 +1,11 @@
 -- Run these in the Supabase SQL editor to create the expected tables
 
--- Profiles table (stores user profile and role)
-create table if not exists public.profiles (
-  id uuid primary key,
-  name text,
+-- Users table (stores user profile and role)
+create table if not exists public.users (
+  user_id uuid primary key,
+  full_name text,
+  email text unique,
+  contact_number text,
   role text default 'user',
   created_at timestamptz default now()
 );
@@ -22,13 +24,22 @@ create table if not exists public.venues (
 -- Bookings table
 create table if not exists public.bookings (
   id bigserial primary key,
-  user_id uuid references public.profiles(id) on delete set null,
+  user_id uuid references public.users(user_id) on delete set null,
   venue_id bigint references public.venues(id) on delete set null,
   event_name text not null,
   event_purpose text,
   start_datetime timestamptz not null,
   end_datetime timestamptz not null,
   status text default 'pending',
+  created_at timestamptz default now()
+);
+
+-- Audit Logs table
+create table if not exists public.audit_logs (
+  id bigserial primary key,
+  booking_id bigint references public.bookings(id) on delete set null,
+  admin_id uuid references public.users(user_id) on delete set null,
+  action text not null,
   created_at timestamptz default now()
 );
 
