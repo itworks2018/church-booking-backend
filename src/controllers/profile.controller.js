@@ -1,4 +1,4 @@
-import { supabase } from "../supabaseClient.js";
+import { supabase } from "../config/supabase.js";
 
 // GET /api/profile/my
 export const getMyProfile = async (req, res) => {
