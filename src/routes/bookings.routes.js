@@ -4,15 +4,18 @@ import {
   updateBookingStatus,
 } from "../controllers/bookings.controller.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
+import db from "../config/supabase.js";
 
 const router = Router();
 
+// Create booking
 router.post("/", requireAuth, createBooking);
+
+// Update booking status (admin only)
 router.patch("/:id/status", requireAuth, requireAdmin, updateBookingStatus);
 
-export default router;
-
-app.get("/api/bookings/my", requireAuth, async (req, res) => {
+// ⭐ Get bookings for the logged‑in user
+router.get("/my", requireAuth, async (req, res) => {
   try {
     const { data, error } = await db
       .from("bookings")
@@ -27,3 +30,5 @@ app.get("/api/bookings/my", requireAuth, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+export default router;

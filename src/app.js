@@ -4,14 +4,11 @@ import cors from "cors";
 import apiRouter from "./routes/index.js";
 
 const app = express();
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 app.use(express.json());
 
 // ✅ ENVIRONMENT VALIDATION
-const {
-  JWT_SECRET,
-  PORT
-} = process.env;
+const { JWT_SECRET, PORT } = process.env;
 
 if (!JWT_SECRET) {
   throw new Error("Missing required JWT environment variables.");
@@ -34,12 +31,13 @@ app.use(
   })
 );
 
-// ✅ API ROUTES
+// ✅ API ROUTES (this now includes /api/bookings/my)
 app.use("/api", apiRouter);
 
 // ✅ ROOT
 app.get("/", (req, res) => res.send("Server running"));
 
+// ✅ START SERVER
 app.listen(PORT || 10000, () =>
   console.log(`✅ Server running on port ${PORT || 10000}`)
 );
