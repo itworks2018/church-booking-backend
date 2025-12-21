@@ -1,38 +1,60 @@
 import { db } from "../config/supabase.js";
 
 export const createBooking = async (req, res) => {
-  const { event_name, start_datetime, end_datetime, venue_id } = req.body;
+  const {
+    event_name,
+    purpose,
+    attendees,
+    venue,
+    start_datetime,
+    end_datetime,
+    additional_needs
+  } = req.body;
 
-  if (!event_name || !start_datetime || !end_datetime || !venue_id)
+  // Validate required fields
+  if (!event_name || !purpose || !attendees || !venue || !start_datetime || !end_datetime) {
     return res.status(400).json({ error: "Missing fields" });
+  }
 
   const start = new Date(start_datetime);
   const end = new Date(end_datetime);
 
-  if (isNaN(start) || isNaN(end))
+  if (isNaN(start) || isNaN(end)) {
     return res.status(400).json({ error: "Invalid date format" });
+  }
 
-  if (end <= start)
-    return res
-      .status(400)
-      .json({ error: "End time must be after start time" });
+  if (end <= start) {
+    return res.status(400).json({ error: "End time must be after start time" });
+  }
 
   try {
-    const { data, error } = await db.from("bookings").insert([
-      {
-        user_id: req.user.id,
-        event_name,
-        start_datetime,
-        end_datetime,
-        venue_id,
-        status: "pending",
-      },
-    ]);
+    const { data, error } = await db
+      .from("bookings")
+      .insert([
+        {
+          user_id: req.user.id,
+          event_name,
+          purpose,
+          attendees,
+          venue,
+          start_datetime,
+          end_datetime,
+          additional_needs,
+          status: "pending"
+        }
+      ])
+      .select()
+      .single(); // ensures Supabase returns the inserted row
 
-    if (error) return res.status(500).json({ error: "Booking failed" });
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return res.status(500).json({ error: error.message });
+    }
 
-    return res.status(201).json({ booking: data[0] });
-  } catch {
+    return res.status(201).json({ booking: data });
+
+  } catch (err) {
+    console.error("Server error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };
