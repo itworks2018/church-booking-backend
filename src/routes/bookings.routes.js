@@ -20,7 +20,7 @@ router.get("/my", requireAuth, async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .select("*")
-      .eq("user_id", req.user.sub)
+      .eq("user_id", req.user.id)
       .order("start_datetime", { ascending: false });
 
     if (error) return res.status(400).json({ error: error.message });
