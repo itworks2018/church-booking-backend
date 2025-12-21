@@ -4,7 +4,7 @@ import {
   updateBookingStatus,
 } from "../controllers/bookings.controller.js";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
-import db from "../config/supabase.js";
+import { db } from "../config/supabase.js";
 
 const router = Router();
 
