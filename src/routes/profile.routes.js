@@ -5,9 +5,9 @@ import { requireAuth } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
 // GET logged-in user's profile
-router.get("/my", authMiddleware, getMyProfile);
+router.get("/my", requireAuth, getMyProfile);
 
 // UPDATE logged-in user's profile
-router.patch("/my", authMiddleware, updateMyProfile);
+router.patch("/my", requireAuth, updateMyProfile);
 
 export default router;
