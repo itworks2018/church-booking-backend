@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import apiRouter from "./routes/index.js";
-import profileRoutes from "./routes/profile.routes.js";
+import profileRoutes from "./routes/profiles.routes.js";
 
 
 const app = express();
