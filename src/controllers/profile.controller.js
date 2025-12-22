@@ -7,8 +7,8 @@ export const getMyProfile = async (req, res) => {
 
     const { data, error } = await supabase
       .from("users")
-      .select("id, full_name, email, contact_number, role")
-      .eq("id", userId)
+      .select("user_id, full_name, email, contact_number, role")
+      .eq("user_id", req.user.id)
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
@@ -28,7 +28,7 @@ export const updateMyProfile = async (req, res) => {
     const { data, error } = await supabase
       .from("users")
       .update({ email, contact_number, role })
-      .eq("id", userId)
+      .eq("user_id", userId)
       .select()
       .single();
 
