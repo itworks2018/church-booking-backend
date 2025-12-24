@@ -3,7 +3,9 @@ import { db as supabase } from "../config/supabase.js";
 // GET /api/profile/my
 export const getMyProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const { data, error } = await supabase
       .from("users")
@@ -22,13 +24,16 @@ export const getMyProfile = async (req, res) => {
 // PATCH /api/profile/my
 export const updateMyProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const { email, contact_number, role } = req.body;
 
     const { data, error } = await supabase
       .from("users")
       .update({ email, contact_number, role })
-      .eq("user_id", userId)
+      .eq("user_id", req.user.id)
       .select()
       .single();
 
