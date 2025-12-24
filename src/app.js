@@ -8,6 +8,13 @@ import profileRoutes from "./routes/profile.routes.js";
 const app = express();
 app.set("trust proxy", 1);
 
+// ✅ ENVIRONMENT VALIDATION
+const { JWT_SECRET, PORT } = process.env;
+
+if (!JWT_SECRET) {
+  throw new Error("Missing required JWT environment variables.");
+}
+
 // ✅ CORS (supports multiple origins + credentials)
 const allowedOrigins = [
   "http://localhost:5500",
@@ -40,10 +47,5 @@ app.listen(PORT || 10000, () =>
   console.log(`✅ Server running on port ${PORT || 10000}`)
 );
 
-// ✅ ENVIRONMENT VALIDATION
-const { JWT_SECRET, PORT } = process.env;
 
-if (!JWT_SECRET) {
-  throw new Error("Missing required JWT environment variables.");
-}
 
