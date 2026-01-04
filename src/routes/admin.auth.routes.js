@@ -14,7 +14,7 @@ router.post("/login", async (req, res) => {
     // Step 2: check if user exists in admins table
     const { data: adminData, error: adminError } = await db
       .from("admins")
-      .select("*")
+      .select("email") // only select what you need
       .eq("email", email)
       .single();
 
@@ -22,9 +22,13 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ error: "Not authorized as admin" });
     }
 
+    // Step 3: return consistent JSON
     res.json({
       token: data.session.access_token,
-      user: { email: adminData.email, role: "admin" }
+      user: {
+        email: adminData.email,
+        role: "admin"
+      }
     });
   } catch (err) {
     console.error("Admin login error:", err);
