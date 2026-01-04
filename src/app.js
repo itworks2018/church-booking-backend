@@ -1,11 +1,12 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import adminAuthRoutes from "./routes/admin.auth.routes.js";
 import apiRouter from "./routes/index.js";
 import profileRoutes from "./routes/profile.routes.js";
-import adminAuthRoutes from "./routes/admin.auth.routes.js";
 
-app.use("/api/auth/admin", adminAuthRoutes);
+
+
 
 const app = express();
 app.set("trust proxy", 1);
@@ -38,6 +39,7 @@ app.use(
 app.use(express.json());
 
 // ✅ API ROUTES (this now includes /api/bookings/my)
+app.use("/api/auth/admin", adminAuthRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api", apiRouter);
 
