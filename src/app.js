@@ -3,7 +3,9 @@ import express from "express";
 import cors from "cors";
 import apiRouter from "./routes/index.js";
 import profileRoutes from "./routes/profile.routes.js";
+import adminAuthRoutes from "./routes/admin.auth.routes.js";
 
+app.use("/api/auth/admin", adminAuthRoutes);
 
 const app = express();
 app.set("trust proxy", 1);
