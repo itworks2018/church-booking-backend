@@ -31,4 +31,35 @@ router.get("/my", requireAuth, async (req, res) => {
   }
 });
 
+// 🔹 Metric card: Total bookings
+router.get("/summary", requireAdmin, async (req, res) => {
+  try {
+    const { count, error } = await db
+      .from("bookings")
+      .select("*", { count: "exact", head: true });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ totalBookings: count });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// 🔹 Metric card: Pending approval bookings
+router.get("/pending", requireAdmin, async (req, res) => {
+  try {
+    const { count, error } = await db
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"); // adjust column name if different
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ pendingCount: count });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;
