@@ -62,4 +62,21 @@ router.get("/pending", requireAdmin, async (req, res) => {
   }
 });
 
+// 🔹 Metric card: Upcoming events (future bookings)
+router.get("/upcoming", requireAdmin, async (req, res) => {
+  try {
+    const now = new Date().toISOString();
+    const { count, error } = await db
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .gte("start_datetime", now);
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ upcomingCount: count });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;
