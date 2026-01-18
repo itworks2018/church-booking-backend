@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getMetricsCounts } from "../controllers/metrics.controller.js";
-import { requireAdmin } from "../middleware/auth.middleware.js";
+import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
