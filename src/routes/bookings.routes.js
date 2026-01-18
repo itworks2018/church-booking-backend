@@ -47,7 +47,7 @@ router.get("/summary", requireAdmin, async (req, res) => {
 });
 
 // 🔹 Metric card: Pending approval bookings
-router.get("/pending", requireAdmin, async (req, res) => {
+router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { count, error } = await db
       .from("bookings")
@@ -63,7 +63,7 @@ router.get("/pending", requireAdmin, async (req, res) => {
 });
 
 // 🔹 Metric card: Upcoming events (future bookings)
-router.get("/upcoming", requireAdmin, async (req, res) => {
+router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
     const { count, error } = await db
