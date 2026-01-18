@@ -1,7 +1,10 @@
+
 import express from "express";
 import { db, auth } from "../config/supabase.js";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
+const { JWT_SECRET } = process.env;
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -22,13 +25,16 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ error: "Not authorized as admin" });
     }
 
-    // Step 3: return consistent JSON
+    // Step 3: issue backend JWT for admin
+    const payload = {
+      email: adminData.email,
+      role: "admin"
+    };
+    const backendToken = jwt.sign(payload, JWT_SECRET, { expiresIn: "2h" });
+
     res.json({
-      token: data.session.access_token,
-      user: {
-        email: adminData.email,
-        role: "admin"
-      }
+      token: backendToken,
+      user: payload
     });
   } catch (err) {
     console.error("Admin login error:", err);
