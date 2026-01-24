@@ -52,7 +52,7 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("status", "pending"); // adjust column name if different
+      .eq("status", "Pending"); // adjust column name if different
 
     if (error) return res.status(400).json({ error: error.message });
 
@@ -86,7 +86,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     const { data, error } = await db
       .from("admin_bookings_view") // ✅ use the view you created
       .select("*")
-      .eq("status", "approved")
+      .eq("status", "Approved")
       .gte("date", now)
       .order("date", { ascending: true });
 
