@@ -89,3 +89,25 @@ export const updateBookingStatus = async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 };
+
+// Get all upcoming approved bookings
+export const getUpcomingBookings = async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from("admin_bookings_view") // ✅ use the view
+      .select("*")
+      .eq("status", "approved")
+      .gte("date", new Date().toISOString()) // only future events
+      .order("date", { ascending: true });
+
+    if (error) {
+      console.error("Supabase fetch error:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.json({ items: data, upcomingCount: data.length });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};

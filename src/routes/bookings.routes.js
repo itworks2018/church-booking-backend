@@ -79,4 +79,23 @@ router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// 🔹 Full list: Upcoming approved bookings (for calendar)
+router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const now = new Date().toISOString();
+    const { data, error } = await db
+      .from("admin_bookings_view") // ✅ use the view you created
+      .select("*")
+      .eq("status", "approved")
+      .gte("date", now)
+      .order("date", { ascending: true });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ items: data, upcomingCount: data.length });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;
