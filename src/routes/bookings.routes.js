@@ -91,14 +91,15 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 🔹 Metric card: Upcoming events (future bookings count only)
+// 🔹 Metric card: Upcoming events (Approved only)
 router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .gte("start_datetime", now);
+      .eq("status", "Approved")       // ✅ only approved requests
+      .gte("start_datetime", now);    // ✅ only future events
 
     if (error) return res.status(400).json({ error: error.message });
 
