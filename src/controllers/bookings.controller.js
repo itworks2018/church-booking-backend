@@ -70,11 +70,14 @@ export const updateBookingStatus = async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .update({ status })
-      .eq("id", req.params.id)
+      .eq("booking_id", req.params.id)   // ✅ use booking_id instead of id
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: "Update failed" });
+    if (error) {
+      console.error("Supabase update error:", error);
+      return res.status(500).json({ error: "Update failed" });
+    }
 
     await db.from("audit_logs").insert([
       {
@@ -85,7 +88,8 @@ export const updateBookingStatus = async (req, res) => {
     ]);
 
     return res.json({ booking: data });
-  } catch {
+  } catch (err) {
+    console.error("Server error:", err);
     return res.status(500).json({ error: "Server error" });
   }
 };
