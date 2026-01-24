@@ -46,13 +46,13 @@ router.get("/summary", requireAdmin, async (req, res) => {
   }
 });
 
-// 🔹 Metric card: Pending approval bookings
+// 🔹 Metric card: Pending approval bookings (count only)
 router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("status", "Pending"); // adjust column name if different
+      .eq("status", "Pending"); // ✅ match enum exactly
 
     if (error) return res.status(400).json({ error: error.message });
 
@@ -62,7 +62,24 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 🔹 Metric card: Upcoming events (future bookings)
+// 🔹 Full list: Pending bookings (for table)
+router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from("admin_bookings_view")   // ✅ use the view for user_email etc.
+      .select("*")
+      .eq("status", "Pending")
+      .order("start_datetime", { ascending: true });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ items: data, pendingCount: data.length });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// 🔹 Metric card: Upcoming events (future bookings count only)
 router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
@@ -84,11 +101,11 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
     const { data, error } = await db
-      .from("admin_bookings_view") // ✅ use the view you created
+      .from("admin_bookings_view")
       .select("*")
-      .eq("status", "Approved")
-      .gte("date", now)
-      .order("date", { ascending: true });
+      .eq("status", "Approved")          // ✅ match enum exactly
+      .gte("start_datetime", now)        // ✅ use actual column name
+      .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
 
