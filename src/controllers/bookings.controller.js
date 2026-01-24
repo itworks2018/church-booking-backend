@@ -40,7 +40,7 @@ export const createBooking = async (req, res) => {
           start_datetime,
           end_datetime,
           additional_needs,
-          status: "pending"
+          status: "Pending"
         }
       ])
       .select()
@@ -61,7 +61,7 @@ export const createBooking = async (req, res) => {
 
 export const updateBookingStatus = async (req, res) => {
   const { status } = req.body;
-  const allowed = ["pending", "approved", "rejected", "cancelled"];
+  const allowed = ["Pending", "Approved", "Rejected"];
 
   if (!allowed.includes(status))
     return res.status(400).json({ error: "Invalid status" });
@@ -96,7 +96,7 @@ export const getUpcomingBookings = async (req, res) => {
     const { data, error } = await db
       .from("admin_bookings_view") // ✅ use the view
       .select("*")
-      .eq("status", "approved")
+      .eq("status", "Approved")
       .gte("date", new Date().toISOString()) // only future events
       .order("date", { ascending: true });
 
