@@ -62,12 +62,24 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 🔹 Full list: Pending bookings (for table)
+// 🔹 Full list: Pending bookings (for table with actions)
 router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
-      .from("admin_bookings_view")   // ✅ use the view for user_email etc.
-      .select("*")
+      .from("bookings")   // ✅ use bookings table directly
+      .select(`
+        booking_id,
+        user_id,
+        event_name,
+        purpose,
+        attendees,
+        venue,
+        start_datetime,
+        end_datetime,
+        additional_needs,
+        status,
+        created_at
+      `)
       .eq("status", "Pending")
       .order("start_datetime", { ascending: true });
 
@@ -101,10 +113,22 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
     const { data, error } = await db
-      .from("admin_bookings_view")
-      .select("*")
+      .from("bookings")   // ✅ use bookings table directly
+      .select(`
+        booking_id,
+        user_id,
+        event_name,
+        purpose,
+        attendees,
+        venue,
+        start_datetime,
+        end_datetime,
+        additional_needs,
+        status,
+        created_at
+      `)
       .eq("status", "Approved")          // ✅ match enum exactly
-      .gte("start_datetime", now)        // ✅ use actual column name
+      .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
