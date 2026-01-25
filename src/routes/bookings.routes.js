@@ -194,6 +194,20 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// 🔹 Delete booking (admin only)
+router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { error } = await db
+      .from("bookings")
+      .delete()
+      .eq("booking_id", req.params.id);
 
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ message: `Booking ${req.params.id} deleted successfully` });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 export default router;
