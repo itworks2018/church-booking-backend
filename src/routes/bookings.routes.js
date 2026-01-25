@@ -169,4 +169,29 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// 🔹 Update booking details (admin only)
+router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from("bookings")
+      .update({
+        event_name: req.body.event_name,
+        purpose: req.body.purpose,
+        attendees: req.body.attendees,
+        venue: req.body.venue,
+        start_datetime: req.body.start_datetime,
+        end_datetime: req.body.end_datetime,
+        additional_needs: req.body.additional_needs,
+        status: req.body.status
+      })
+      .eq("booking_id", req.params.id)
+      .select();
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ updated: data });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;
