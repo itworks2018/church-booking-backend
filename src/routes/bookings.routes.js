@@ -140,7 +140,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 🔹 Full list: Approved bookings (for Manage Events page)
+/// 🔹 Full list: Approved + Rejected bookings (for Manage Events page)
 router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
@@ -158,12 +158,12 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
         status,
         created_at
       `)
-      .eq("status", "Approved")
+      .in("status", ["Approved", "Rejected"])   // ✅ include both statuses
       .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json({ items: data, approvedCount: data.length });
+    res.json({ items: data, count: data.length });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -193,5 +193,7 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+
+
 
 export default router;
