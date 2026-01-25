@@ -140,4 +140,33 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// 🔹 Full list: Approved bookings (for Manage Events page)
+router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from("bookings")
+      .select(`
+        booking_id,
+        user_id,
+        event_name,
+        purpose,
+        attendees,
+        venue,
+        start_datetime,
+        end_datetime,
+        additional_needs,
+        status,
+        created_at
+      `)
+      .eq("status", "Approved")
+      .order("start_datetime", { ascending: true });
+
+    if (error) return res.status(400).json({ error: error.message });
+
+    res.json({ items: data, approvedCount: data.length });
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;
