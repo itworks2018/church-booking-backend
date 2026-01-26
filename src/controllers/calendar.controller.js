@@ -26,7 +26,7 @@ export const getVenueAvailableSlots = async (req, res) => {
     const { data: bookings, error } = await db
       .from("bookings")
       .select("start_datetime, end_datetime")
-      .eq("venue_id", venueId)
+      .eq("venue", venueId)
       .eq("status", "Approved")
       .gte("start_datetime", `${date}T00:00:00`)
       .lt("start_datetime", `${date}T23:59:59`);
