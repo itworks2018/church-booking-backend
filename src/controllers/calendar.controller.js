@@ -8,7 +8,7 @@ export const getVenueBookings = async (req, res) => {
       .from("bookings")
       .select("id, start_datetime, end_datetime, status")
       .eq("venue_id", venueId)
-      .in("status", ["pending", "approved"]);
+      .in("status", ["Pending", "Approved"]);
     if (error) return res.status(400).json({ error: error.message });
     res.json(data);
   } catch (err) {
@@ -26,7 +26,7 @@ export const getVenueAvailableSlots = async (req, res) => {
       .from("bookings")
       .select("start_datetime, end_datetime")
       .eq("venue_id", venueId)
-      .eq("status", "approved")
+      .eq("status", "Approved")
       .gte("start_datetime", `${date}T00:00:00`)
       .lt("start_datetime", `${date}T23:59:59`);
     if (error) return res.status(400).json({ error: error.message });

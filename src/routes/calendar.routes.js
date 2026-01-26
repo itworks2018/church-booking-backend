@@ -4,7 +4,7 @@ import { requireAuth } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// Get all bookings (pending and approved) for a venue
+// Get all bookings (Pending and Approved) for a venue
 router.get("/venue/:venueId/bookings", requireAuth, getVenueBookings);
 
 // Get available slots for a venue on a specific date
