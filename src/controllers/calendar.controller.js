@@ -6,11 +6,12 @@ export const getVenueBookings = async (req, res) => {
   try {
     const { data, error } = await db
       .from("bookings")
-      .select("id, start_datetime, end_datetime, status")
-      .eq("venue_id", venueId)
+      .select("booking_id, user_id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at")
+      .eq("venue", venueId) // ✅ match your actual column name
       .in("status", ["Pending", "Approved"]);
+
     if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
+    res.json(data); // ✅ always returns an array
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
