@@ -16,7 +16,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
       .from("users")
-      .select("id, full_name, email, role, created_at")
+      .select("user_id, full_name, email, role, created_at")
       .order("created_at", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
@@ -36,7 +36,7 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
         email: req.body.email,
         role: req.body.role
       })
-      .eq("id", req.params.id)
+      .eq("user_id", req.params.id)
       .select();
 
     if (error) return res.status(400).json({ error: error.message });
@@ -52,7 +52,7 @@ router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
     const { error } = await db
       .from("users")
       .delete()
-      .eq("id", req.params.id);
+      .eq("user_id", req.params.id);
 
     if (error) return res.status(400).json({ error: error.message });
     res.json({ message: `User ${req.params.id} deleted successfully` });
