@@ -4,14 +4,19 @@ import { db } from "../config/supabase.js";
 export const getVenueBookings = async (req, res) => {
   const { venueId } = req.params;
   try {
+    // venueId should be a number (venue_id in DB)
+    const venueIdNum = Number(venueId);
+    if (isNaN(venueIdNum)) {
+      return res.status(400).json({ error: "Invalid venueId" });
+    }
     const { data, error } = await db
       .from("bookings")
-      .select("booking_id, user_id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at")
-      .eq("venue", venueId) // ✅ match your actual column name
+      .select("id as booking_id, user_id, event_name, event_purpose, venue_id, start_datetime, end_datetime, status, created_at")
+      .eq("venue_id", venueIdNum)
       .in("status", ["Pending", "Approved"]);
 
     if (error) return res.status(400).json({ error: error.message });
-    res.json(data); // ✅ always returns an array
+    res.json(data); // always returns an array
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }

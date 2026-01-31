@@ -5,14 +5,14 @@ export const createBooking = async (req, res) => {
     event_name,
     purpose,
     attendees,
-    venue,
+    venue_id,
     start_datetime,
     end_datetime,
     additional_needs
   } = req.body;
 
   // Validate required fields
-  if (!event_name || !purpose || !attendees || !venue || !start_datetime || !end_datetime) {
+  if (!event_name || !purpose || !attendees || !venue_id || !start_datetime || !end_datetime) {
     return res.status(400).json({ error: "Missing fields" });
   }
 
@@ -36,7 +36,7 @@ export const createBooking = async (req, res) => {
           event_name,
           purpose,
           attendees,
-          venue,
+          venue_id: Number(venue_id),
           start_datetime,
           end_datetime,
           additional_needs,
