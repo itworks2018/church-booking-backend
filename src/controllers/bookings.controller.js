@@ -67,7 +67,7 @@ export const createBooking = async (req, res) => {
           event_name,
           purpose,
           attendees,
-          venue, // string, matches enum
+          venue,
           start_datetime,
           end_datetime,
           additional_needs,
