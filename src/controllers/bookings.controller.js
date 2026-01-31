@@ -1,3 +1,18 @@
+// Fetch all bookings (pending and approved) for all users
+export const getAllBookings = async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from("bookings")
+      .select("*")
+      .in("status", ["Pending", "Approved"])
+      .order("start_datetime", { ascending: false });
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
 import { db } from "../config/supabase.js";
 
 export const createBooking = async (req, res) => {
