@@ -43,6 +43,22 @@ export const createBooking = async (req, res) => {
   }
 
   try {
+    // Check for overlapping approved bookings for the same venue
+    const { data: conflicts, error: conflictError } = await db
+      .from("bookings")
+      .select("*")
+      .eq("venue", venue)
+      .eq("status", "Approved")
+      .or(`and(start_datetime,lt.${end_datetime}),and(end_datetime,gt.${start_datetime})`);
+
+    if (conflictError) {
+      console.error("Supabase conflict check error:", conflictError);
+      return res.status(500).json({ error: conflictError.message });
+    }
+    if (conflicts && conflicts.length > 0) {
+      return res.status(409).json({ error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue." });
+    }
+
     const { data, error } = await db
       .from("bookings")
       .insert([
