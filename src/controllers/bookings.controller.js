@@ -14,6 +14,8 @@ export const getAllBookings = async (req, res) => {
   }
 };
 import { db } from "../config/supabase.js";
+import { sendMail } from "../utils/mailer.js";
+import { db as supabase } from "../config/supabase.js";
 
 export const createBooking = async (req, res) => {
   const {
@@ -83,6 +85,23 @@ export const createBooking = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
+    // Fetch user email
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("email, full_name")
+      .eq("user_id", req.user.id)
+      .single();
+    if (!userError && user?.email) {
+      // Send email notification to user with full booking details
+      const details = `Event: ${event_name}\nPurpose: ${purpose}\nVenue: ${venue}\nAttendees: ${attendees}\nStart: ${start_datetime}\nEnd: ${end_datetime}\nAdditional Needs: ${additional_needs || 'None'}`;
+      await sendMail({
+        to: user.email,
+        subject: "Booking Request Submitted",
+        text: `Hi ${user.full_name || "User"},\n\nYour booking request has been submitted and is pending approval.\n\n${details}`,
+        html: `<p>Hi ${user.full_name || "User"},</p><p>Your booking request has been submitted and is pending approval.</p><pre>${details}</pre>`
+      });
+    }
+
     return res.status(201).json({ booking: data });
 
   } catch (err) {
@@ -118,6 +137,25 @@ export const updateBookingStatus = async (req, res) => {
         action: `status_changed_to_${status}`,
       },
     ]);
+
+    // If approved, send email to user
+    if (status === "Approved" && data?.user_id) {
+      // Fetch user email and booking details
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .select("email, full_name")
+        .eq("user_id", data.user_id)
+        .single();
+      if (!userError && user?.email) {
+        const details = `Event: ${data.event_name}\nPurpose: ${data.purpose}\nVenue: ${data.venue}\nAttendees: ${data.attendees}\nStart: ${data.start_datetime}\nEnd: ${data.end_datetime}\nAdditional Needs: ${data.additional_needs || 'None'}`;
+        await sendMail({
+          to: user.email,
+          subject: "Booking Approved",
+          text: `Hi ${user.full_name || "User"},\n\nYour booking has been approved!\n\n${details}`,
+          html: `<p>Hi ${user.full_name || "User"},</p><p>Your booking has been <b>approved</b>!</p><pre>${details}</pre>`
+        });
+      }
+    }
 
     return res.json({ booking: data });
   } catch (err) {
