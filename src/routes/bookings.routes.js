@@ -1,15 +1,17 @@
 import { Router } from "express";
+
 import {
   createBooking,
   updateBookingStatus,
   getAllBookings,
 } from "../controllers/bookings.controller.js";
-// Get all bookings (pending and approved) for all users
-router.get("/all", requireAuth, requireAdmin, getAllBookings);
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
 import { db } from "../config/supabase.js";
 
 const router = Router();
+
+// Get all bookings (pending and approved) for all users
+router.get("/all", requireAuth, requireAdmin, getAllBookings);
 
 // Create booking
 router.post("/", requireAuth, createBooking);
