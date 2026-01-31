@@ -49,7 +49,8 @@ export const createBooking = async (req, res) => {
       .select("*")
       .eq("venue", venue)
       .eq("status", "Approved")
-      .or(`and(start_datetime,lt.${end_datetime}),and(end_datetime,gt.${start_datetime})`);
+      .lt("start_datetime", end_datetime)
+      .gt("end_datetime", start_datetime);
 
     if (conflictError) {
       console.error("Supabase conflict check error:", conflictError);
