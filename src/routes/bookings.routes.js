@@ -11,7 +11,7 @@ import { db } from "../config/supabase.js";
 const router = Router();
 
 // Get all bookings (pending and approved) for all users
-router.get("/all", requireAuth, requireAdmin, getAllBookings);
+router.get("/all", requireAuth, getAllBookings);
 
 // Create booking
 router.post("/", requireAuth, createBooking);
