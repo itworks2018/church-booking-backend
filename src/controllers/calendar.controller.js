@@ -10,7 +10,7 @@ export const getVenueBookings = async (req, res) => {
     }
     const { data, error } = await db
       .from("bookings")
-      .select("id as booking_id, user_id, event_name, event_purpose, venue, start_datetime, end_datetime, status, created_at")
+      .select("booking_id, user_id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at")
       .eq("venue", venueId)
       .in("status", ["Pending", "Approved"]);
 
