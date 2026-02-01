@@ -11,12 +11,14 @@ import { Resend } from 'resend';
  * @param {string} param0.text - Plain text body
  * @param {string} [param0.from] - Optional sender (defaults to SMTP_FROM env)
  */
+export async function sendMail({ to, subject, html, text, from }) {
   const resend = new Resend(process.env.RESEND_API_KEY);
-  return resend.emails.send({
+  return await resend.emails.send({
     from: from || process.env.SMTP_FROM || 'onboarding@resend.dev',
     to: Array.isArray(to) ? to : [to],
     subject,
     html,
     text,
   });
+}
 }
