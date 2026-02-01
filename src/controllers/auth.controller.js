@@ -12,20 +12,9 @@ const signToken = (payload) =>
 export const signup = async (req, res) => {
   const { full_name, email, contact_number, role, password } = req.body;
 
-  // Roles MUST match Supabase ENUM + frontend values
-  const allowedRoles = [
-    "Admin",
-    "Ministry Head",
-    "COS",
-    "DGroup Leader"
-  ];
-
+  // Remove strict allowedRoles check since role is now text
   if (!full_name || !email || !contact_number || !password || !role)
     return res.status(400).json({ error: "All fields are required" });
-
-  if (!allowedRoles.includes(role)) {
-    return res.status(400).json({ error: "Invalid role selected." });
-  }
 
   try {
     // 1) Create Supabase Auth user
@@ -55,7 +44,7 @@ export const signup = async (req, res) => {
           full_name,
           email,
           contact_number,
-          role, // now matches ENUM
+          role, // now matches text
         },
       ]);
 
