@@ -1,4 +1,5 @@
 import "dotenv/config";
+import "./utils/reminder.cron.js"; // 24-hour reminder cron
 import express from "express";
 import cors from "cors";
 import adminAuthRoutes from "./routes/admin.auth.routes.js";

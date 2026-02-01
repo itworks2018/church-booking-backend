@@ -15,6 +15,7 @@ export const getAllBookings = async (req, res) => {
 };
 import { db } from "../config/supabase.js";
 import { sendMail } from "../utils/mailer.js";
+import { renderEmailTemplate } from "../utils/renderEmailTemplate.js";
 import { db as supabase } from "../config/supabase.js";
 
 export const createBooking = async (req, res) => {
@@ -92,13 +93,21 @@ export const createBooking = async (req, res) => {
       .eq("user_id", req.user.id)
       .single();
     if (!userError && user?.email) {
-      // Send email notification to user with full booking details
-      const details = `Event: ${event_name}\nPurpose: ${purpose}\nVenue: ${venue}\nAttendees: ${attendees}\nStart: ${start_datetime}\nEnd: ${end_datetime}\nAdditional Needs: ${additional_needs || 'None'}`;
+      // Send custom email notification to user with full booking details
+      const html = await renderEmailTemplate("booking-request", {
+        name: user.full_name || "User",
+        event_name,
+        purpose,
+        venue,
+        attendees,
+        start_datetime,
+        end_datetime,
+        additional_needs: additional_needs || 'None'
+      });
       await sendMail({
         to: user.email,
         subject: "Booking Request Submitted",
-        text: `Hi ${user.full_name || "User"},\n\nYour booking request has been submitted and is pending approval.\n\n${details}`,
-        html: `<p>Hi ${user.full_name || "User"},</p><p>Your booking request has been submitted and is pending approval.</p><pre>${details}</pre>`
+        html
       });
     }
 
@@ -138,8 +147,8 @@ export const updateBookingStatus = async (req, res) => {
       },
     ]);
 
-    // If approved, send email to user
-    if (status === "Approved" && data?.user_id) {
+    // If approved or rejected, send email to user
+    if ((status === "Approved" || status === "Rejected") && data?.user_id) {
       // Fetch user email and booking details
       const { data: user, error: userError } = await supabase
         .from("users")
@@ -147,12 +156,21 @@ export const updateBookingStatus = async (req, res) => {
         .eq("user_id", data.user_id)
         .single();
       if (!userError && user?.email) {
-        const details = `Event: ${data.event_name}\nPurpose: ${data.purpose}\nVenue: ${data.venue}\nAttendees: ${data.attendees}\nStart: ${data.start_datetime}\nEnd: ${data.end_datetime}\nAdditional Needs: ${data.additional_needs || 'None'}`;
+        const templateName = status === "Approved" ? "booking-approved" : "booking-rejected";
+        const html = await renderEmailTemplate(templateName, {
+          name: user.full_name || "User",
+          event_name: data.event_name,
+          purpose: data.purpose,
+          venue: data.venue,
+          attendees: data.attendees,
+          start_datetime: data.start_datetime,
+          end_datetime: data.end_datetime,
+          additional_needs: data.additional_needs || 'None'
+        });
         await sendMail({
           to: user.email,
-          subject: "Booking Approved",
-          text: `Hi ${user.full_name || "User"},\n\nYour booking has been approved!\n\n${details}`,
-          html: `<p>Hi ${user.full_name || "User"},</p><p>Your booking has been <b>approved</b>!</p><pre>${details}</pre>`
+          subject: status === "Approved" ? "Booking Approved" : "Booking Rejected",
+          html
         });
       }
     }
