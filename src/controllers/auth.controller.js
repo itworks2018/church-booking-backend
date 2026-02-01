@@ -14,12 +14,10 @@ export const signup = async (req, res) => {
 
   // Roles MUST match Supabase ENUM + frontend values
   const allowedRoles = [
-    "dgroup_leader",
-    "ministry_head",
-    "dgroup_member",
-    "cos",
-    "new_member",
-    "admin",
+    "Admin",
+    "Ministry Head",
+    "COS",
+    "DGroup Leader"
   ];
 
   if (!full_name || !email || !contact_number || !password || !role)
