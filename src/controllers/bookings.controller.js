@@ -63,6 +63,7 @@ export const createBooking = async (req, res) => {
       return res.status(409).json({ error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue." });
     }
 
+
     const { data, error } = await db
       .from("bookings")
       .insert([
@@ -85,6 +86,17 @@ export const createBooking = async (req, res) => {
       console.error("Supabase insert error:", error);
       return res.status(500).json({ error: error.message });
     }
+
+    // Insert audit log for booking creation
+    await db.from("audit_logs").insert([
+      {
+        booking_id: data.booking_id,
+        admin_id: null, // created by user, not admin
+        action: "created",
+        notes: `Booking created by user_id: ${req.user.id}`,
+        created_at: new Date().toISOString()
+      }
+    ]);
 
     // Fetch user email
     const { data: user, error: userError } = await supabase
@@ -145,6 +157,8 @@ export const updateBookingStatus = async (req, res) => {
         booking_id: req.params.id,
         admin_id: req.user.id,
         action: `status_changed_to_${status}`,
+        notes: `Status changed to ${status} by admin_id: ${req.user.id}`,
+        created_at: new Date().toISOString()
       },
     ]);
 
