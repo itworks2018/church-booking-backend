@@ -4,24 +4,15 @@ import { sendMail } from "./mailer.js";
 import { renderEmailTemplate } from "./renderEmailTemplate.js";
 
 async function sendTest() {
-  const html = await renderEmailTemplate("booking-request", {
-    name: "Test User",
-    event_name: "Test Event",
-    purpose: "Testing",
-    venue: "Main Hall",
-    attendees: "50",
-    start_datetime: "2026-02-10 10:00",
-    end_datetime: "2026-02-10 12:00",
-    additional_needs: "Projector"
-  });
+  const html = '<h2>This is a test email</h2><p>If you received this, your Gmail SMTP is working!</p>';
   const result = await sendMail({
-    to: "itworks.shimt2018@gmail.com",
-    subject: "[Test] Booking Request Submitted",
-    html
+    to: process.env.EMAIL_USER,
+    subject: '[Test] Gmail SMTP is working',
+    html,
+    text: 'This is a test email. If you received this, your Gmail SMTP is working!'
   });
-  console.log("Test email sendMail result:", result);
-  console.log("RESEND_API_KEY:", process.env.RESEND_API_KEY ? "Loaded" : "Missing");
-  console.log("Test email sent.");
+  console.log('Test email sendMail result:', result && result.accepted);
+  console.log('Test email sent using Gmail SMTP.');
 }
 
 sendTest().catch(console.error);

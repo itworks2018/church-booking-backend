@@ -32,7 +32,8 @@ cron.schedule("0 * * * *", async () => {
         name: booking.users.full_name || "User",
         event_name: booking.event_name,
         venue: booking.venue,
-        start_datetime: booking.start_datetime
+        start_datetime: booking.start_datetime,
+        requested_at: booking.created_at || ""
       });
       await sendMail({
         to: booking.users.email,

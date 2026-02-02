@@ -1,6 +1,19 @@
-// Uses Resend (Cuttlefish) for transactional notification emails
 
-import { Resend } from 'resend';
+// Uses Nodemailer with Gmail SMTP for transactional notification emails
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // use TLS/STARTTLS
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false
+  }
+});
 
 /**
  * Send transactional email using Gmail SMTP
@@ -9,15 +22,15 @@ import { Resend } from 'resend';
  * @param {string} param0.subject - Email subject
  * @param {string} param0.html - HTML body
  * @param {string} param0.text - Plain text body
- * @param {string} [param0.from] - Optional sender (defaults to SMTP_FROM env)
+ * @param {string} [param0.from] - Optional sender (defaults to EMAIL_USER env)
  */
 export async function sendMail({ to, subject, html, text, from }) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  return await resend.emails.send({
-    from: from || process.env.SMTP_FROM || 'onboarding@resend.dev',
-    to: Array.isArray(to) ? to : [to],
+  const mailOptions = {
+    from: from || process.env.EMAIL_USER,
+    to: Array.isArray(to) ? to.join(',') : to,
     subject,
     html,
     text,
-  });
+  };
+  return await transporter.sendMail(mailOptions);
 }

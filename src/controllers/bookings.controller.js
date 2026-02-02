@@ -102,7 +102,8 @@ export const createBooking = async (req, res) => {
         attendees,
         start_datetime,
         end_datetime,
-        additional_needs: additional_needs || 'None'
+        additional_needs: additional_needs || 'None',
+        requested_at: data.created_at || new Date().toISOString()
       });
       await sendMail({
         to: user.email,
@@ -165,7 +166,8 @@ export const updateBookingStatus = async (req, res) => {
           attendees: data.attendees,
           start_datetime: data.start_datetime,
           end_datetime: data.end_datetime,
-          additional_needs: data.additional_needs || 'None'
+          additional_needs: data.additional_needs || 'None',
+          requested_at: data.created_at || new Date().toISOString()
         });
         await sendMail({
           to: user.email,
