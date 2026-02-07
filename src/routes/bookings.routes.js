@@ -133,7 +133,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
         status,
         created_at
       `)
-      .eq("status", "Approved")          // ✅ match enum exactly
+      .or('status.eq.Approved,status.eq.Pending')          // ✅ include both Approved and Pending bookings
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
 
