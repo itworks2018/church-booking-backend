@@ -36,50 +36,81 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Get all audit logs (admin only)
 router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { data, error } = await db
+    // First, fetch all audit logs with basic fields
+    const { data: auditLogs, error: auditError } = await db
       .from("audit_logs")
-      .select(`
-        id,
-        booking_id,
-        admin_id,
-        action,
-        created_at,
-        bookings!inner (
-          booking_id,
-          event_name,
-          user_id
-        ),
-        users!admin_id (
-          full_name,
-          email
-        )
-      `)
+      .select("id, booking_id, admin_id, action, created_at")
       .order("created_at", { ascending: false });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (auditError) return res.status(400).json({ error: auditError.message });
 
-    // Fetch user emails for bookers
-    const bookingUserIds = [...new Set(data.map(log => log.bookings?.user_id).filter(Boolean))];
-    let bookerEmails = {};
-    
-    if (bookingUserIds.length > 0) {
-      const { data: usersData, error: usersError } = await db
-        .from("users")
-        .select("user_id, email")
-        .in("user_id", bookingUserIds);
+    if (!auditLogs || auditLogs.length === 0) {
+      return res.json({ items: [], count: 0 });
+    }
+
+    // Get unique booking IDs and admin IDs
+    const bookingIds = [...new Set(auditLogs.map(log => log.booking_id).filter(Boolean))];
+    const adminIds = [...new Set(auditLogs.map(log => log.admin_id).filter(Boolean))];
+
+    // Fetch booking details
+    let bookingsMap = {};
+    if (bookingIds.length > 0) {
+      const { data: bookings } = await db
+        .from("bookings")
+        .select("id, booking_id, event_name, user_id")
+        .in("id", bookingIds);
       
-      if (!usersError && usersData) {
-        bookerEmails = Object.fromEntries(usersData.map(u => [u.user_id, u.email]));
+      if (bookings) {
+        bookingsMap = Object.fromEntries(bookings.map(b => [b.id, b]));
       }
     }
 
-    // Enrich data with booker emails
-    const enrichedData = data.map(log => ({
-      ...log,
-      booker_email: bookerEmails[log.bookings?.user_id] || "Unknown"
-    }));
+    // Fetch admin user details
+    let adminsMap = {};
+    if (adminIds.length > 0) {
+      const { data: admins } = await db
+        .from("users")
+        .select("user_id, full_name, email")
+        .in("user_id", adminIds);
+      
+      if (admins) {
+        adminsMap = Object.fromEntries(admins.map(a => [a.user_id, a]));
+      }
+    }
 
-    res.json({ items: enrichedData, count: enrichedData.length });
+    // Fetch booker details
+    const bookerIds = [...new Set(Object.values(bookingsMap).map(b => b.user_id).filter(Boolean))];
+    let bookersMap = {};
+    if (bookerIds.length > 0) {
+      const { data: bookers } = await db
+        .from("users")
+        .select("user_id, email")
+        .in("user_id", bookerIds);
+      
+      if (bookers) {
+        bookersMap = Object.fromEntries(bookers.map(b => [b.user_id, b]));
+      }
+    }
+
+    // Enrich audit logs with related data
+    const enrichedLogs = auditLogs.map(log => {
+      const booking = bookingsMap[log.booking_id];
+      const admin = adminsMap[log.admin_id];
+      const booker = booking ? bookersMap[booking.user_id] : null;
+
+      return {
+        id: log.id,
+        booking_id: booking?.booking_id || log.booking_id,
+        event_name: booking?.event_name || "N/A",
+        booker_email: booker?.email || "Unknown",
+        action: log.action,
+        admin_name: admin?.full_name || "N/A",
+        admin_email: admin?.email || "N/A",
+        created_at: log.created_at
+      };
+    });
+
+    res.json({ items: enrichedLogs, count: enrichedLogs.length });
   } catch (err) {
     console.error("Audit logs error:", err);
     res.status(500).json({ error: "Server error" });
