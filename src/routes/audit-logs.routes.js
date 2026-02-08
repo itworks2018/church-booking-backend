@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
+import { db } from "../config/supabase.js";
 
 const router = Router();
 
@@ -13,37 +14,34 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "booking_id and action are required" });
     }
 
-    // Validate action values (must match CHECK constraint)
-    const allowedActions = ["Reviewed", "Approved", "Rejected"];
+    // Validate action values (must match CHECK constraint: only 'Approved', 'Rejected', 'Updated')
+    const allowedActions = ["Approved", "Rejected", "Updated"];
     if (!allowedActions.includes(action)) {
       return res.status(400).json({ 
-        error: `Invalid action. Must be one of: ${allowedActions.join(", ")}` 
+        error: `Invalid action. Must be one of: ${allowedActions.join(", ")}. Got: '${action}'` 
       });
     }
 
-    // Import dynamically to get fresh db instance
-    const { db } = await import("../config/supabase.js");
-
-    // First, find the booking by booking_id to get the actual id (primary key)
+    // Verify the booking exists (by display booking_id)
     const { data: bookingData, error: bookingError } = await db
       .from("bookings")
-      .select("id")
+      .select("booking_id")
       .eq("booking_id", booking_id)
       .single();
 
     if (bookingError || !bookingData) {
       console.error("Booking lookup error:", bookingError);
-      return res.status(400).json({ error: "Booking not found" });
+      return res.status(400).json({ error: "Booking not found", details: bookingError?.message });
     }
 
-    // Insert the audit log (middleware already verified admin status)
+    // Insert the audit log with the display booking_id (TEXT)
     const { data, error } = await db
       .from("audit_logs")
       .insert([
         {
-          booking_id: bookingData.id,  // Use the primary key
-          admin_id,
-          action
+          booking_id: booking_id,  // Store the display booking_id (TEXT)
+          admin_id: admin_id,      // Admin user UUID
+          action: action           // One of: 'Approved', 'Rejected', 'Updated'
         }
       ])
       .select();
@@ -64,9 +62,6 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Get all audit logs (admin only - middleware enforces admin check)
 router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
-    // Import dynamically to get fresh db instance
-    const { db } = await import("../config/supabase.js");
-
     // Fetch all audit logs with basic fields (middleware already verified admin status)
     const { data: auditLogs, error: auditError } = await db
       .from("audit_logs")

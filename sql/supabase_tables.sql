@@ -40,19 +40,25 @@ create table if not exists public.bookings (
 );
 
 -- Audit Logs table
--- Note: Authorization is handled by middleware (requireAuth, requireAdmin), not RLS policies
--- This allows our custom JWT authentication to work without conflicts
+-- Authorization: RLS is ENABLED (uses deny-by-default)
+-- Backend uses service_role key which automatically bypasses RLS
+-- This provides security compliance while maintaining backend functionality
 create table if not exists public.audit_logs (
-  id bigserial primary key,
-  booking_id bigint references public.bookings(id) on delete set null,
+  log_id bigserial primary key,
+  booking_id text references public.bookings(booking_id) on delete set null,
   admin_id uuid references public.users(user_id) on delete set null,
-  action text not null,
+  action text not null check (action in ('Approved', 'Rejected', 'Updated')),
   created_at timestamptz default now()
 );
 
 -- Optional: index for faster queries by user and date
 create index if not exists idx_bookings_user_id on public.bookings(user_id);
 create index if not exists idx_bookings_start_datetime on public.bookings(start_datetime);
+
+-- Audit logs indexes (for performance on policy enforcement and queries)
+create index if not exists idx_audit_logs_booking_id on public.audit_logs(booking_id);
+create index if not exists idx_audit_logs_created_at on public.audit_logs(created_at desc);
+create index if not exists idx_audit_logs_admin_id on public.audit_logs(admin_id);
 
 -- ==================== MIGRATIONS ====================
 -- Add missing columns to bookings table (if they don't exist)
@@ -61,3 +67,6 @@ alter table public.bookings add column if not exists purpose text;
 alter table public.bookings add column if not exists attendees text;
 alter table public.bookings add column if not exists venue text;
 alter table public.bookings add column if not exists additional_needs text;
+
+-- NOTE: See migrate_audit_logs.sql for audit_logs table migration
+-- (Drops and recreates the table with correct schema)

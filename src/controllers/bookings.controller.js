@@ -160,7 +160,8 @@ export const updateBookingStatus = async (req, res) => {
       return res.status(500).json({ error: "Update failed" });
     }
 
-    // Audit logging is now handled by the /api/audit-logs endpoint
+    // ℹ️ Audit logging is now handled by the /api/audit-logs endpoint
+    // Frontend calls logAuditAction BEFORE calling updateBookingStatus
 
     // If approved or rejected, send email to user
     if ((status === "Approved" || status === "Rejected") && data?.user_id) {
