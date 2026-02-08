@@ -65,7 +65,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
     // Fetch all audit logs with basic fields (middleware already verified admin status)
     const { data: auditLogs, error: auditError } = await db
       .from("audit_logs")
-      .select("id, booking_id, admin_id, action, created_at")
+      .select("log_id, booking_id, admin_id, action, created_at")
       .order("created_at", { ascending: false });
 
     if (auditError) {
@@ -77,20 +77,20 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
       return res.json({ items: [], count: 0 });
     }
 
-    // Get unique booking IDs and admin IDs (these are the primary keys from bookings table)
-    const bookingPrimaryIds = [...new Set(auditLogs.map(log => log.booking_id).filter(Boolean))];
+    // Get unique booking display IDs and admin IDs
+    const bookingDisplayIds = [...new Set(auditLogs.map(log => log.booking_id).filter(Boolean))];
     const adminIds = [...new Set(auditLogs.map(log => log.admin_id).filter(Boolean))];
 
-    // Fetch booking details by their primary ID
+    // Fetch booking details by their display booking_id (TEXT field)
     let bookingsMap = {};
-    if (bookingPrimaryIds.length > 0) {
+    if (bookingDisplayIds.length > 0) {
       const { data: bookings, error: bookingsError } = await db
         .from("bookings")
-        .select("id, booking_id, event_name, user_id")
-        .in("id", bookingPrimaryIds);
+        .select("booking_id, event_name, user_id")
+        .in("booking_id", bookingDisplayIds);
       
       if (bookings) {
-        bookingsMap = Object.fromEntries(bookings.map(b => [b.id, b]));
+        bookingsMap = Object.fromEntries(bookings.map(b => [b.booking_id, b]));
       }
       if (bookingsError) {
         console.error("Bookings fetch error:", bookingsError);
@@ -132,12 +132,12 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
 
     // Enrich audit logs with related data
     const enrichedLogs = auditLogs.map(log => {
-      const booking = bookingsMap[log.booking_id];  // log.booking_id is the primary key
+      const booking = bookingsMap[log.booking_id];  // log.booking_id is the FK
       const admin = adminsMap[log.admin_id];
       const booker = booking ? bookersMap[booking.user_id] : null;
 
       return {
-        id: log.id,
+        log_id: log.log_id,
         booking_id: booking?.booking_id || "N/A",  // Return the display booking_id
         event_name: booking?.event_name || "N/A",
         booker_email: booker?.email || "Unknown",
