@@ -8,7 +8,14 @@ export const getAllBookings = async (req, res) => {
       .order("start_datetime", { ascending: false });
 
     if (error) return res.status(400).json({ error: error.message });
-    res.json(data);
+    
+    // Generate display booking_id from numeric id
+    const itemsWithDisplayId = data.map(item => ({
+      ...item,
+      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+    }));
+    
+    res.json(itemsWithDisplayId);
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -64,24 +71,10 @@ export const createBooking = async (req, res) => {
       return res.status(409).json({ error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue." });
     }
 
-    // Generate a human-friendly booking ID (e.g., BK-001, BK-002, etc.)
-    const { count, error: countError } = await db
-      .from("bookings")
-      .select("*", { count: "exact", head: true });
-    
-    if (countError) {
-      console.error("❌ Count error:", countError);
-      return res.status(500).json({ error: "Failed to generate booking ID" });
-    }
-
-    const bookingNumber = (count || 0) + 1;
-    const generatedBookingId = `BK-${String(bookingNumber).padStart(6, "0")}`;
-
     const { data, error } = await db
       .from("bookings")
       .insert([
         {
-          booking_id: generatedBookingId,
           user_id: req.user.id,
           event_name,
           purpose,
@@ -101,7 +94,13 @@ export const createBooking = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    console.log("✅ Booking created - ID:", data.booking_id);
+    // Generate display booking ID from the numeric id
+    const responseData = {
+      ...data,
+      booking_id: `BK-${String(data.id).padStart(6, "0")}`
+    };
+
+    console.log("✅ Booking created - ID:", responseData.booking_id);
 
     // Fetch user details for email (non-blocking if fails)
     const { data: user, error: userError } = await supabase
@@ -121,7 +120,7 @@ export const createBooking = async (req, res) => {
           start_datetime,
           end_datetime,
           additional_needs: additional_needs || 'None',
-          requested_at: data.created_at || new Date().toISOString()
+          requested_at: responseData.created_at || new Date().toISOString()
         });
         
         await sendMail({
@@ -137,7 +136,7 @@ export const createBooking = async (req, res) => {
       console.error("⚠️  User lookup failed (non-blocking):", userError.message);
     }
 
-    return res.status(201).json({ booking: data });
+    return res.status(201).json({ booking: responseData });
 
   } catch (err) {
     console.error("❌ FATAL ERROR:", err.message);
@@ -153,41 +152,57 @@ export const updateBookingStatus = async (req, res) => {
     return res.status(400).json({ error: "Invalid status" });
 
   try {
+    // Parse the id - if it starts with "BK-", extract the numeric part
+    let bookingId = req.params.id;
+    if (bookingId.startsWith("BK-")) {
+      // Strip "BK-" prefix to get the numeric ID
+      bookingId = parseInt(bookingId.replace("BK-", ""), 10);
+    } else {
+      // Assume it's already numeric
+      bookingId = parseInt(bookingId, 10);
+    }
+
     const { data, error } = await db
       .from("bookings")
       .update({ status })
-      .eq("booking_id", req.params.id)   // ✅ use booking_id instead of id
+      .eq("id", bookingId)   // Use numeric id, not booking_id
       .select()
       .single();
 
     if (error) {
-      console.error("Supabase update error:", error);
+      console.error("❌ Update error:", error.message);
       return res.status(500).json({ error: "Update failed" });
     }
+
+    // Attach display booking ID to response
+    const responseData = {
+      ...data,
+      booking_id: `BK-${String(data.id).padStart(6, "0")}`
+    };
 
     // ℹ️ Audit logging is now handled by the /api/audit-logs endpoint
     // Frontend calls logAuditAction BEFORE calling updateBookingStatus
 
     // If approved or rejected, send email to user
-    if ((status === "Approved" || status === "Rejected") && data?.user_id) {
+    if ((status === "Approved" || status === "Rejected") && responseData?.user_id) {
       // Fetch user email and booking details
       const { data: user, error: userError } = await supabase
         .from("users")
         .select("email, full_name")
-        .eq("user_id", data.user_id)
+        .eq("user_id", responseData.user_id)
         .single();
       if (!userError && user?.email) {
         const templateName = status === "Approved" ? "booking-approved" : "booking-rejected";
         const html = await renderEmailTemplate(templateName, {
           name: user.full_name || "User",
-          event_name: data.event_name,
-          purpose: data.purpose,
-          venue: data.venue,
-          attendees: data.attendees,
-          start_datetime: data.start_datetime,
-          end_datetime: data.end_datetime,
-          additional_needs: data.additional_needs || 'None',
-          requested_at: data.created_at || new Date().toISOString()
+          event_name: responseData.event_name,
+          purpose: responseData.purpose,
+          venue: responseData.venue,
+          attendees: responseData.attendees,
+          start_datetime: responseData.start_datetime,
+          end_datetime: responseData.end_datetime,
+          additional_needs: responseData.additional_needs || 'None',
+          requested_at: responseData.created_at || new Date().toISOString()
         });
         await sendMail({
           to: user.email,
@@ -197,7 +212,7 @@ export const updateBookingStatus = async (req, res) => {
       }
     }
 
-    return res.json({ booking: data });
+    return res.json({ booking: responseData });
   } catch (err) {
     console.error("Server error:", err);
     return res.status(500).json({ error: "Server error" });

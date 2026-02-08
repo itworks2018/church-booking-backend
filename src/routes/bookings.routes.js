@@ -30,7 +30,13 @@ router.get("/my", requireAuth, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json(data);
+    // Generate display booking_id from numeric id
+    const itemsWithDisplayId = data.map(item => ({
+      ...item,
+      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+    }));
+
+    res.json(itemsWithDisplayId);
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -71,9 +77,9 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
 router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
-      .from("bookings")   // ✅ use bookings table directly
+      .from("bookings")
       .select(`
-        booking_id,
+        id,
         user_id,
         event_name,
         purpose,
@@ -90,7 +96,13 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json({ items: data, pendingCount: data.length });
+    // Generate display booking_id from numeric id
+    const itemsWithDisplayId = data.map(item => ({
+      ...item,
+      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+    }));
+
+    res.json({ items: itemsWithDisplayId, pendingCount: data.length });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -119,9 +131,9 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
     const { data, error } = await db
-      .from("bookings")   // ✅ use bookings table directly
+      .from("bookings")
       .select(`
-        booking_id,
+        id,
         user_id,
         event_name,
         purpose,
@@ -133,13 +145,18 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
         status,
         created_at
       `)
-      .or('status.eq.Approved,status.eq.Pending')          // ✅ include both Approved and Pending bookings
+      .or('status.eq.Approved,status.eq.Pending')
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json({ items: data, upcomingCount: data.length });
+    const itemsWithDisplayId = data.map(item => ({
+      ...item,
+      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+    }));
+
+    res.json({ items: itemsWithDisplayId, upcomingCount: data.length });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -151,7 +168,7 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .select(`
-        booking_id,
+        id,
         user_id,
         event_name,
         purpose,
@@ -163,12 +180,17 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
         status,
         created_at
       `)
-      .in("status", ["Approved", "Rejected"])   // ✅ include both statuses
+      .in("status", ["Approved", "Rejected"])
       .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
 
-    res.json({ items: data, count: data.length });
+    const itemsWithDisplayId = data.map(item => ({
+      ...item,
+      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+    }));
+
+    res.json({ items: itemsWithDisplayId, count: data.length });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -177,6 +199,14 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Update booking details (admin only)
 router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
+    // Parse the id - if it starts with "BK-", extract the numeric part
+    let bookingId = req.params.id;
+    if (bookingId.startsWith("BK-")) {
+      bookingId = parseInt(bookingId.replace("BK-", ""), 10);
+    } else {
+      bookingId = parseInt(bookingId, 10);
+    }
+
     const { data, error } = await db
       .from("bookings")
       .update({
@@ -189,11 +219,17 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
         additional_needs: req.body.additional_needs,
         status: req.body.status
       })
-      .eq("booking_id", req.params.id)
-      .select();
+      .eq("id", bookingId)
+      .select()
+      .single();
 
     if (error) return res.status(400).json({ error: error.message });
-    res.json({ updated: data });
+    
+    const responseData = {
+      ...data,
+      booking_id: `BK-${String(data.id).padStart(6, "0")}`
+    };
+    res.json({ updated: responseData });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
@@ -202,10 +238,18 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Delete booking (admin only)
 router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
+    // Parse the id - if it starts with "BK-", extract the numeric part
+    let bookingId = req.params.id;
+    if (bookingId.startsWith("BK-")) {
+      bookingId = parseInt(bookingId.replace("BK-", ""), 10);
+    } else {
+      bookingId = parseInt(bookingId, 10);
+    }
+
     const { error } = await db
       .from("bookings")
       .delete()
-      .eq("booking_id", req.params.id);
+      .eq("id", bookingId);
 
     if (error) return res.status(400).json({ error: error.message });
 

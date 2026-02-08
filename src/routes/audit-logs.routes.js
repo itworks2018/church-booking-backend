@@ -22,16 +22,22 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    // Verify the booking exists (by display booking_id)
+    // Extract numeric ID from display booking_id (e.g., "BK-000019" -> 19)
+    let numericId = booking_id;
+    if (booking_id.startsWith("BK-")) {
+      numericId = parseInt(booking_id.replace("BK-", ""), 10);
+    }
+
+    // Verify the booking exists (by numeric id)
     const { data: bookingData, error: bookingError } = await db
       .from("bookings")
-      .select("booking_id")
-      .eq("booking_id", booking_id)
+      .select("id")
+      .eq("id", numericId)
       .single();
 
     if (bookingError || !bookingData) {
-      console.error("Booking lookup error:", bookingError);
-      return res.status(400).json({ error: "Booking not found", details: bookingError?.message });
+      console.error("❌ Booking lookup error:", bookingError);
+      return res.status(400).json({ error: "Booking not found" });
     }
 
     // Insert the audit log with the display booking_id (TEXT)
@@ -39,7 +45,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       .from("audit_logs")
       .insert([
         {
-          booking_id: booking_id,  // Store the display booking_id (TEXT)
+          booking_id: booking_id,  // Store the display booking_id (TEXT) for audit trail
           admin_id: admin_id,      // Admin user UUID
           action: action           // One of: 'Approved', 'Rejected', 'Updated'
         }
@@ -47,14 +53,14 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       .select();
 
     if (error) {
-      console.error("Audit log insert error:", error);
+      console.error("❌ Audit log insert error:", error);
       return res.status(400).json({ error: error.message || "Failed to create audit log" });
     }
 
-    console.log(`Audit log created: booking ${booking_id}, action ${action}, admin ${admin_id}`);
+    console.log(`✅ Audit log created: booking ${booking_id}, action ${action}`);
     res.status(201).json({ success: true, data, message: "Audit log created" });
   } catch (err) {
-    console.error("Audit log creation error:", err);
+    console.error("❌ Audit log creation error:", err);
     res.status(500).json({ error: "Server error", details: err.message });
   }
 });
@@ -81,19 +87,33 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
     const bookingDisplayIds = [...new Set(auditLogs.map(log => log.booking_id).filter(Boolean))];
     const adminIds = [...new Set(auditLogs.map(log => log.admin_id).filter(Boolean))];
 
-    // Fetch booking details by their display booking_id (TEXT field)
+    // Fetch booking details by extracting numeric IDs from display IDs
     let bookingsMap = {};
     if (bookingDisplayIds.length > 0) {
+      // Extract numeric IDs from display booking IDs
+      const numericIds = bookingDisplayIds.map(displayId => {
+        if (displayId.startsWith("BK-")) {
+          return parseInt(displayId.replace("BK-", ""), 10);
+        }
+        return parseInt(displayId, 10);
+      });
+
       const { data: bookings, error: bookingsError } = await db
         .from("bookings")
-        .select("booking_id, event_name, user_id")
-        .in("booking_id", bookingDisplayIds);
+        .select("id, event_name, user_id")
+        .in("id", numericIds);
       
       if (bookings) {
-        bookingsMap = Object.fromEntries(bookings.map(b => [b.booking_id, b]));
+        // Map by display booking_id for lookup
+        bookingsMap = Object.fromEntries(
+          bookings.map(b => {
+            const displayId = `BK-${String(b.id).padStart(6, "0")}`;
+            return [displayId, { ...b, booking_id: displayId }];
+          })
+        );
       }
       if (bookingsError) {
-        console.error("Bookings fetch error:", bookingsError);
+        console.error("❌ Bookings fetch error:", bookingsError);
       }
     }
 
