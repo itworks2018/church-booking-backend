@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
-import { db } from "../config/supabase.js";
 
 const router = Router();
 
-// 🔹 Create audit log entry (admin only - uses service_role which bypasses RLS)
+// 🔹 Create audit log entry (admin only - RLS policy enforces admin check)
 router.post("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { booking_id, action } = req.body;
@@ -14,13 +13,16 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "booking_id and action are required" });
     }
 
-    // Validate action values (must be one of the allowed enum values)
+    // Validate action values (must match CHECK constraint)
     const allowedActions = ["Reviewed", "Approved", "Rejected"];
     if (!allowedActions.includes(action)) {
       return res.status(400).json({ 
         error: `Invalid action. Must be one of: ${allowedActions.join(", ")}` 
       });
     }
+
+    // Import dynamically to get fresh db instance
+    const { db } = await import("../config/supabase.js");
 
     // First, find the booking by booking_id to get the actual id (primary key)
     const { data: bookingData, error: bookingError } = await db
@@ -34,8 +36,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "Booking not found" });
     }
 
-    // Insert the audit log with the actual booking id
-    // db client uses service_role, so this bypasses RLS
+    // Insert the audit log (RLS policy checks if admin)
     const { data, error } = await db
       .from("audit_logs")
       .insert([
@@ -48,22 +49,25 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       .select();
 
     if (error) {
-      console.error("Audit log insertion error:", error);
-      return res.status(400).json({ error: error.message });
+      console.error("Audit log insert error:", error);
+      return res.status(400).json({ error: error.message || "Failed to create audit log" });
     }
 
     console.log(`Audit log created: booking ${booking_id}, action ${action}, admin ${admin_id}`);
-    res.json({ success: true, data });
+    res.status(201).json({ success: true, data, message: "Audit log created" });
   } catch (err) {
     console.error("Audit log creation error:", err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
-// 🔹 Get all audit logs (admin only - uses service_role which bypasses RLS)
+// 🔹 Get all audit logs (admin only - RLS policy enforces admin check)
 router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
-    // Fetch all audit logs with basic fields (service_role bypasses RLS)
+    // Import dynamically to get fresh db instance
+    const { db } = await import("../config/supabase.js");
+
+    // Fetch all audit logs with basic fields (RLS policy enforces admin check)
     const { data: auditLogs, error: auditError } = await db
       .from("audit_logs")
       .select("id, booking_id, admin_id, action, created_at")
@@ -152,7 +156,7 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
     res.json({ items: enrichedLogs, count: enrichedLogs.length });
   } catch (err) {
     console.error("Audit logs error:", err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 

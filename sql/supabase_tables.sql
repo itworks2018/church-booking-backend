@@ -46,3 +46,30 @@ create table if not exists public.audit_logs (
 -- Optional: index for faster queries by user and date
 create index if not exists idx_bookings_user_id on public.bookings(user_id);
 create index if not exists idx_bookings_start_datetime on public.bookings(start_datetime);
+
+-- ==================== RLS POLICIES ====================
+
+-- Enable RLS on audit_logs table
+alter table public.audit_logs enable row level security;
+
+-- Allow admins to INSERT into audit_logs
+create policy "admins_can_insert_audit_logs" on public.audit_logs
+  for insert
+  with check (
+    exists (
+      select 1 from public.users
+      where user_id = auth.uid()
+      and role = 'admin'
+    )
+  );
+
+-- Allow admins to SELECT audit_logs
+create policy "admins_can_select_audit_logs" on public.audit_logs
+  for select
+  using (
+    exists (
+      select 1 from public.users
+      where user_id = auth.uid()
+      and role = 'admin'
+    )
+  );
