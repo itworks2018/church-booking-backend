@@ -113,23 +113,28 @@ export const createBooking = async (req, res) => {
       .eq("user_id", req.user.id)
       .single();
     if (!userError && user?.email) {
-      // Send custom email notification to user with full booking details
-      const html = await renderEmailTemplate("booking-request", {
-        name: user.full_name || "User",
-        event_name,
-        purpose,
-        venue,
-        attendees,
-        start_datetime,
-        end_datetime,
-        additional_needs: additional_needs || 'None',
-        requested_at: data.created_at || new Date().toISOString()
-      });
-      await sendMail({
-        to: user.email,
-        subject: "Booking Request Submitted",
-        html
-      });
+      try {
+        // Send custom email notification to user with full booking details
+        const html = await renderEmailTemplate("booking-request", {
+          name: user.full_name || "User",
+          event_name,
+          purpose,
+          venue,
+          attendees,
+          start_datetime,
+          end_datetime,
+          additional_needs: additional_needs || 'None',
+          requested_at: data.created_at || new Date().toISOString()
+        });
+        await sendMail({
+          to: user.email,
+          subject: "Booking Request Submitted",
+          html
+        });
+      } catch (emailErr) {
+        console.error("Email sending failed (non-blocking):", emailErr);
+        // Don't fail the booking if email fails - logging is sufficient
+      }
     }
 
     return res.status(201).json({ booking: data });

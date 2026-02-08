@@ -6,7 +6,8 @@
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "test:emails": "node src/utils/testSendMail.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.27.0",
