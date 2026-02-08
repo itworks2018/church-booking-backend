@@ -24,10 +24,15 @@ create table if not exists public.venues (
 -- Bookings table
 create table if not exists public.bookings (
   id bigserial primary key,
+  booking_id text unique,  -- Display-friendly booking ID
   user_id uuid references public.users(user_id) on delete set null,
   venue_id bigint references public.venues(id) on delete set null,
   event_name text not null,
   event_purpose text,
+  purpose text,  -- Alternative name for event_purpose
+  attendees text,
+  venue text,  -- Venue name (denormalized for easier queries)
+  additional_needs text,
   start_datetime timestamptz not null,
   end_datetime timestamptz not null,
   status text default 'pending',
@@ -35,6 +40,8 @@ create table if not exists public.bookings (
 );
 
 -- Audit Logs table
+-- Note: Authorization is handled by middleware (requireAuth, requireAdmin), not RLS policies
+-- This allows our custom JWT authentication to work without conflicts
 create table if not exists public.audit_logs (
   id bigserial primary key,
   booking_id bigint references public.bookings(id) on delete set null,
@@ -47,29 +54,10 @@ create table if not exists public.audit_logs (
 create index if not exists idx_bookings_user_id on public.bookings(user_id);
 create index if not exists idx_bookings_start_datetime on public.bookings(start_datetime);
 
--- ==================== RLS POLICIES ====================
-
--- Enable RLS on audit_logs table
-alter table public.audit_logs enable row level security;
-
--- Allow admins to INSERT into audit_logs
-create policy "admins_can_insert_audit_logs" on public.audit_logs
-  for insert
-  with check (
-    exists (
-      select 1 from public.users
-      where user_id = auth.uid()
-      and role = 'admin'
-    )
-  );
-
--- Allow admins to SELECT audit_logs
-create policy "admins_can_select_audit_logs" on public.audit_logs
-  for select
-  using (
-    exists (
-      select 1 from public.users
-      where user_id = auth.uid()
-      and role = 'admin'
-    )
-  );
+-- ==================== MIGRATIONS ====================
+-- Add missing columns to bookings table (if they don't exist)
+alter table public.bookings add column if not exists booking_id text unique;
+alter table public.bookings add column if not exists purpose text;
+alter table public.bookings add column if not exists attendees text;
+alter table public.bookings add column if not exists venue text;
+alter table public.bookings add column if not exists additional_needs text;

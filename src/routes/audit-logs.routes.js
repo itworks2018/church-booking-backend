@@ -3,7 +3,7 @@ import { requireAuth, requireAdmin } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
-// 🔹 Create audit log entry (admin only - RLS policy enforces admin check)
+// 🔹 Create audit log entry (admin only - middleware enforces admin check)
 router.post("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { booking_id, action } = req.body;
@@ -36,7 +36,7 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "Booking not found" });
     }
 
-    // Insert the audit log (RLS policy checks if admin)
+    // Insert the audit log (middleware already verified admin status)
     const { data, error } = await db
       .from("audit_logs")
       .insert([
@@ -61,13 +61,13 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
-// 🔹 Get all audit logs (admin only - RLS policy enforces admin check)
+// 🔹 Get all audit logs (admin only - middleware enforces admin check)
 router.get("/", requireAuth, requireAdmin, async (req, res) => {
   try {
     // Import dynamically to get fresh db instance
     const { db } = await import("../config/supabase.js");
 
-    // Fetch all audit logs with basic fields (RLS policy enforces admin check)
+    // Fetch all audit logs with basic fields (middleware already verified admin status)
     const { data: auditLogs, error: auditError } = await db
       .from("audit_logs")
       .select("id, booking_id, admin_id, action, created_at")
