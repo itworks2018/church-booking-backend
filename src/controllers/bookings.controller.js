@@ -19,33 +19,33 @@ import { renderEmailTemplate } from "../utils/renderEmailTemplate.js";
 import { db as supabase } from "../config/supabase.js";
 
 export const createBooking = async (req, res) => {
-  const {
-    event_name,
-    purpose,
-    attendees,
-    venue,
-    start_datetime,
-    end_datetime,
-    additional_needs
-  } = req.body;
-
-  // Validate required fields
-  if (!event_name || !purpose || !attendees || !venue || !start_datetime || !end_datetime) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
-
-  const start = new Date(start_datetime);
-  const end = new Date(end_datetime);
-
-  if (isNaN(start) || isNaN(end)) {
-    return res.status(400).json({ error: "Invalid date format" });
-  }
-
-  if (end <= start) {
-    return res.status(400).json({ error: "End time must be after start time" });
-  }
-
   try {
+    const {
+      event_name,
+      purpose,
+      attendees,
+      venue,
+      start_datetime,
+      end_datetime,
+      additional_needs
+    } = req.body;
+
+    // Validate required fields
+    if (!event_name || !purpose || !attendees || !venue || !start_datetime || !end_datetime) {
+      return res.status(400).json({ error: "Missing fields" });
+    }
+
+    const start = new Date(start_datetime);
+    const end = new Date(end_datetime);
+
+    if (isNaN(start) || isNaN(end)) {
+      return res.status(400).json({ error: "Invalid date format" });
+    }
+
+    if (end <= start) {
+      return res.status(400).json({ error: "End time must be after start time" });
+    }
+
     // Check for overlapping approved bookings for the same venue
     const { data: conflicts, error: conflictError } = await db
       .from("bookings")
@@ -56,9 +56,10 @@ export const createBooking = async (req, res) => {
       .gt("end_datetime", start_datetime);
 
     if (conflictError) {
-      console.error("Supabase conflict check error:", conflictError);
+      console.error("❌ Conflict check error:", conflictError);
       return res.status(500).json({ error: conflictError.message });
     }
+    
     if (conflicts && conflicts.length > 0) {
       return res.status(409).json({ error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue." });
     }
@@ -68,6 +69,11 @@ export const createBooking = async (req, res) => {
       .from("bookings")
       .select("*", { count: "exact", head: true });
     
+    if (countError) {
+      console.error("❌ Count error:", countError);
+      return res.status(500).json({ error: "Failed to generate booking ID" });
+    }
+
     const bookingNumber = (count || 0) + 1;
     const generatedBookingId = `BK-${String(bookingNumber).padStart(6, "0")}`;
 
@@ -88,33 +94,24 @@ export const createBooking = async (req, res) => {
         }
       ])
       .select()
-      .single(); // ensures Supabase returns the inserted row
+      .single();
 
     if (error) {
-      console.error("Supabase insert error:", error);
+      console.error("❌ Insert error:", error.message);
       return res.status(500).json({ error: error.message });
     }
 
-    // Insert audit log for booking creation (no longer needed but keeping as reference)
-    // await db.from("audit_logs").insert([
-    //   {
-    //     booking_id: data.id,  // Use primary key id, not booking_id display field
-    //     admin_id: null, // created by user, not admin
-    //     action: "created",
-    //     notes: `Booking created by user_id: ${req.user.id}`,
-    //     created_at: new Date().toISOString()
-    //   }
-    // ]);
+    console.log("✅ Booking created - ID:", data.booking_id);
 
-    // Fetch user email
+    // Fetch user details for email (non-blocking if fails)
     const { data: user, error: userError } = await supabase
       .from("users")
       .select("email, full_name")
       .eq("user_id", req.user.id)
       .single();
+
     if (!userError && user?.email) {
       try {
-        // Send custom email notification to user with full booking details
         const html = await renderEmailTemplate("booking-request", {
           name: user.full_name || "User",
           event_name,
@@ -126,22 +123,25 @@ export const createBooking = async (req, res) => {
           additional_needs: additional_needs || 'None',
           requested_at: data.created_at || new Date().toISOString()
         });
+        
         await sendMail({
           to: user.email,
           subject: "Booking Request Submitted",
           html
         });
+        console.log("✅ Email sent to:", user.email);
       } catch (emailErr) {
-        console.error("Email sending failed (non-blocking):", emailErr);
-        // Don't fail the booking if email fails - logging is sufficient
+        console.error("⚠️  Email failed (non-blocking):", emailErr.message);
       }
+    } else if (userError) {
+      console.error("⚠️  User lookup failed (non-blocking):", userError.message);
     }
 
     return res.status(201).json({ booking: data });
 
   } catch (err) {
-    console.error("Server error:", err);
-    return res.status(500).json({ error: "Server error" });
+    console.error("❌ FATAL ERROR:", err.message);
+    return res.status(500).json({ error: err.message || "Server error" });
   }
 };
 
