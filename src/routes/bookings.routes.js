@@ -130,6 +130,8 @@ router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
 router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const now = new Date().toISOString();
+    console.log("📅 Fetching upcoming bookings from:", now);
+    
     const { data, error } = await db
       .from("bookings")
       .select(`
@@ -145,11 +147,18 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
         status,
         created_at
       `)
-      .or('status.eq.Approved,status.eq.Pending')
+      .in("status", ["Approved", "Pending"])
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      console.error("❌ Calendar query error:", error);
+      console.error("   Code:", error.code);
+      console.error("   Message:", error.message);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log(`✅ Found ${data?.length || 0} upcoming bookings`);
 
     const itemsWithDisplayId = data.map(item => ({
       ...item,
@@ -158,6 +167,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
 
     res.json({ items: itemsWithDisplayId, upcomingCount: data.length });
   } catch (err) {
+    console.error("❌ Calendar fetch error:", err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
