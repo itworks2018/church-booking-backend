@@ -206,7 +206,7 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
         status: req.body.status
       })
       .eq("id", bookingId)
-      .select()
+      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
