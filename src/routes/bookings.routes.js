@@ -63,7 +63,7 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
+      .eq("status", "Pending");
 
     if (error) return res.status(400).json({ error: error.message });
 
@@ -81,7 +81,7 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .select("*")
-      .eq("status", "pending")
+      .eq("status", "Pending")
       .order("start_datetime", { ascending: true });
 
     if (error) {
@@ -115,7 +115,7 @@ router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("status", "approved")
+      .eq("status", "Approved")
       .gte("start_datetime", now);
 
     if (error) return res.status(400).json({ error: error.message });
@@ -135,7 +135,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .select("*")
-      .in("status", ["approved", "pending"])
+      .in("status", ["Approved", "Pending"])
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
 
@@ -166,7 +166,7 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .select("*")
-      .in("status", ["approved", "rejected"])
+      .in("status", ["Approved", "Rejected"])
       .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });
