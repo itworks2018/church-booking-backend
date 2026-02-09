@@ -104,14 +104,11 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
       console.log("🔍 Value of 'booking_id' field:", data[0].booking_id);
     }
 
-    // Generate display booking_id from numeric id (with defensive check)
+    // Generate display booking_id (already UUID from database)
     const itemsWithDisplayId = data.map(item => {
-      if (!item.id) {
-        console.warn("⚠️  Item missing id field. Available keys:", Object.keys(item), "Item:", item);
-      }
       return {
         ...item,
-        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : item.booking_id || "BK-000000"
+        booking_id: item.booking_id || "unknown"
       };
     });
 
@@ -176,12 +173,9 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     }
 
     const itemsWithDisplayId = data.map(item => {
-      if (!item.id) {
-        console.warn("⚠️  Item missing id field. Available keys:", Object.keys(item));
-      }
       return {
         ...item,
-        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : item.booking_id || "BK-000000"
+        booking_id: item.booking_id || "unknown"
       };
     });
 
@@ -221,12 +215,9 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
     }
 
     const itemsWithDisplayId = data.map(item => {
-      if (!item.id) {
-        console.warn("⚠️  Item missing id field. Available keys:", Object.keys(item));
-      }
       return {
         ...item,
-        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : item.booking_id || "BK-000000"
+        booking_id: item.booking_id || "unknown"
       };
     });
 
@@ -239,13 +230,8 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Update booking details (admin only)
 router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
-    // Parse the id - if it starts with "BK-", extract the numeric part
-    let bookingId = req.params.id;
-    if (bookingId.startsWith("BK-")) {
-      bookingId = parseInt(bookingId.replace("BK-", ""), 10);
-    } else {
-      bookingId = parseInt(bookingId, 10);
-    }
+    // booking_id is UUID from database, use directly
+    const bookingId = req.params.id;
 
     const { data, error } = await db
       .from("bookings")
@@ -259,15 +245,15 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
         additional_needs: req.body.additional_needs,
         status: req.body.status
       })
-      .eq("id", bookingId)
-      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
+      .eq("booking_id", bookingId)
+      .select("*")
       .single();
 
     if (error) return res.status(400).json({ error: error.message });
     
     const responseData = {
       ...data,
-      booking_id: `BK-${String(data.id).padStart(6, "0")}`
+      booking_id: data.booking_id || bookingId
     };
     res.json({ updated: responseData });
   } catch (err) {
@@ -278,18 +264,13 @@ router.patch("/:id", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Delete booking (admin only)
 router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
-    // Parse the id - if it starts with "BK-", extract the numeric part
-    let bookingId = req.params.id;
-    if (bookingId.startsWith("BK-")) {
-      bookingId = parseInt(bookingId.replace("BK-", ""), 10);
-    } else {
-      bookingId = parseInt(bookingId, 10);
-    }
+    // booking_id is UUID from database, use directly
+    const bookingId = req.params.id;
 
     const { error } = await db
       .from("bookings")
       .delete()
-      .eq("id", bookingId);
+      .eq("booking_id", bookingId);
 
     if (error) return res.status(400).json({ error: error.message });
 

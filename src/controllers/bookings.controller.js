@@ -152,20 +152,13 @@ export const updateBookingStatus = async (req, res) => {
     return res.status(400).json({ error: "Invalid status" });
 
   try {
-    // Parse the id - if it starts with "BK-", extract the numeric part
-    let bookingId = req.params.id;
-    if (bookingId.startsWith("BK-")) {
-      // Strip "BK-" prefix to get the numeric ID
-      bookingId = parseInt(bookingId.replace("BK-", ""), 10);
-    } else {
-      // Assume it's already numeric
-      bookingId = parseInt(bookingId, 10);
-    }
+    // booking_id is UUID from database, use directly (no parsing)
+    const bookingId = req.params.id;
 
     const { data, error } = await db
       .from("bookings")
       .update({ status })
-      .eq("id", bookingId)   // Use numeric id, not booking_id
+      .eq("booking_id", bookingId)
       .select()
       .single();
 
@@ -174,10 +167,9 @@ export const updateBookingStatus = async (req, res) => {
       return res.status(500).json({ error: "Update failed" });
     }
 
-    // Attach display booking ID to response
+    // Data already has booking_id (UUID) from database
     const responseData = {
-      ...data,
-      booking_id: `BK-${String(data.id).padStart(6, "0")}`
+      ...data
     };
 
     // ℹ️ Audit logging is now handled by the /api/audit-logs endpoint
