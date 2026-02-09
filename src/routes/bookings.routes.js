@@ -80,7 +80,7 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
     
     const { data, error } = await db
       .from("bookings")
-      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
+      .select("*")
       .eq("status", "Pending")
       .order("start_datetime", { ascending: true });
 
@@ -89,7 +89,9 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
       console.error("   Code:", error.code);
       console.error("   Message:", error.message);
       console.error("   Details:", error.details);
-      return res.status(400).json({ error: error.message });
+      console.error("   Hint:", error.hint);
+      console.error("   Full Error Object:", JSON.stringify(error));
+      return res.status(400).json({ error: error.message, details: error.details, code: error.code });
     }
 
     console.log(`✅ Found ${data?.length || 0} pending bookings`);
@@ -97,16 +99,19 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
     // Debug: Log first item structure to identify missing fields
     if (data?.length > 0) {
       console.log("📊 First booking item structure:", JSON.stringify(data[0]));
+      console.log("📋 Available keys in first item:", Object.keys(data[0]));
+      console.log("🔍 Value of 'id' field:", data[0].id);
+      console.log("🔍 Value of 'booking_id' field:", data[0].booking_id);
     }
 
     // Generate display booking_id from numeric id (with defensive check)
     const itemsWithDisplayId = data.map(item => {
       if (!item.id) {
-        console.warn("⚠️  Item missing id field:", item);
+        console.warn("⚠️  Item missing id field. Available keys:", Object.keys(item), "Item:", item);
       }
       return {
         ...item,
-        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : "BK-000000"
+        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : item.booking_id || "BK-000000"
       };
     });
 
@@ -144,7 +149,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     
     const { data, error } = await db
       .from("bookings")
-      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
+      .select("*")
       .in("status", ["Approved", "Pending"])
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
@@ -153,7 +158,11 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
       console.error("❌ Calendar query error:", error);
       console.error("   Code:", error.code);
       console.error("   Message:", error.message);
-      return res.status(400).json({ error: error.message });
+      console.error("   Details:", error.details);
+      console.error("   Hint:", error.hint);
+      console.error("   Query attempted: status IN ['Approved', 'Pending']");
+      console.error("   Full Error Object:", JSON.stringify(error));
+      return res.status(400).json({ error: error.message, details: error.details, code: error.code });
     }
 
     console.log(`✅ Found ${data?.length || 0} upcoming bookings`);
@@ -161,15 +170,18 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     // Debug: Log first item structure to identify missing fields
     if (data?.length > 0) {
       console.log("📊 First upcoming booking structure:", JSON.stringify(data[0]));
+      console.log("📋 Available keys in first item:", Object.keys(data[0]));
+      console.log("🔍 Value of 'id' field:", data[0].id);
+      console.log("🔍 Value of 'booking_id' field:", data[0].booking_id);
     }
 
     const itemsWithDisplayId = data.map(item => {
       if (!item.id) {
-        console.warn("⚠️  Item missing id field:", item);
+        console.warn("⚠️  Item missing id field. Available keys:", Object.keys(item));
       }
       return {
         ...item,
-        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : "BK-000000"
+        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : item.booking_id || "BK-000000"
       };
     });
 
@@ -185,24 +197,36 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
       .from("bookings")
-      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
+      .select("*")
       .in("status", ["Approved", "Rejected"])
       .order("start_datetime", { ascending: true });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      console.error("❌ Approved/Rejected list query error:", error);
+      console.error("   Code:", error.code);
+      console.error("   Message:", error.message);
+      console.error("   Details:", error.details);
+      console.error("   Hint:", error.hint);
+      console.error("   Query attempted: status IN ['Approved', 'Rejected']");
+      console.error("   Full Error Object:", JSON.stringify(error));
+      return res.status(400).json({ error: error.message, details: error.details, code: error.code });
+    }
 
     // Debug: Log first item structure to identify missing fields
     if (data?.length > 0) {
       console.log("📊 First approved/rejected booking structure:", JSON.stringify(data[0]));
+      console.log("📋 Available keys in first item:", Object.keys(data[0]));
+      console.log("🔍 Value of 'id' field:", data[0].id);
+      console.log("🔍 Value of 'booking_id' field:", data[0].booking_id);
     }
 
     const itemsWithDisplayId = data.map(item => {
       if (!item.id) {
-        console.warn("⚠️  Item missing id field:", item);
+        console.warn("⚠️  Item missing id field. Available keys:", Object.keys(item));
       }
       return {
         ...item,
-        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : "BK-000000"
+        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : item.booking_id || "BK-000000"
       };
     });
 

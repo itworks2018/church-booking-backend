@@ -35,7 +35,7 @@ create table if not exists public.bookings (
   additional_needs text,
   start_datetime timestamptz not null,
   end_datetime timestamptz not null,
-  status text default 'pending',
+  status text default 'Pending',
   created_at timestamptz default now()
 );
 
