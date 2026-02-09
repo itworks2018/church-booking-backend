@@ -94,11 +94,21 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
 
     console.log(`✅ Found ${data?.length || 0} pending bookings`);
 
-    // Generate display booking_id from numeric id
-    const itemsWithDisplayId = data.map(item => ({
-      ...item,
-      booking_id: `BK-${String(item.id).padStart(6, "0")}`
-    }));
+    // Debug: Log first item structure to identify missing fields
+    if (data?.length > 0) {
+      console.log("📊 First booking item structure:", JSON.stringify(data[0]));
+    }
+
+    // Generate display booking_id from numeric id (with defensive check)
+    const itemsWithDisplayId = data.map(item => {
+      if (!item.id) {
+        console.warn("⚠️  Item missing id field:", item);
+      }
+      return {
+        ...item,
+        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : "BK-000000"
+      };
+    });
 
     res.json({ items: itemsWithDisplayId, pendingCount: data.length });
   } catch (err) {
@@ -148,10 +158,20 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
 
     console.log(`✅ Found ${data?.length || 0} upcoming bookings`);
 
-    const itemsWithDisplayId = data.map(item => ({
-      ...item,
-      booking_id: `BK-${String(item.id).padStart(6, "0")}`
-    }));
+    // Debug: Log first item structure to identify missing fields
+    if (data?.length > 0) {
+      console.log("📊 First upcoming booking structure:", JSON.stringify(data[0]));
+    }
+
+    const itemsWithDisplayId = data.map(item => {
+      if (!item.id) {
+        console.warn("⚠️  Item missing id field:", item);
+      }
+      return {
+        ...item,
+        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : "BK-000000"
+      };
+    });
 
     res.json({ items: itemsWithDisplayId, upcomingCount: data.length });
   } catch (err) {
@@ -171,10 +191,20 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
 
-    const itemsWithDisplayId = data.map(item => ({
-      ...item,
-      booking_id: `BK-${String(item.id).padStart(6, "0")}`
-    }));
+    // Debug: Log first item structure to identify missing fields
+    if (data?.length > 0) {
+      console.log("📊 First approved/rejected booking structure:", JSON.stringify(data[0]));
+    }
+
+    const itemsWithDisplayId = data.map(item => {
+      if (!item.id) {
+        console.warn("⚠️  Item missing id field:", item);
+      }
+      return {
+        ...item,
+        booking_id: item.id ? `BK-${String(item.id).padStart(6, "0")}` : "BK-000000"
+      };
+    });
 
     res.json({ items: itemsWithDisplayId, count: data.length });
   } catch (err) {

@@ -26,6 +26,14 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
     let numericId = booking_id;
     if (booking_id.startsWith("BK-")) {
       numericId = parseInt(booking_id.replace("BK-", ""), 10);
+    } else {
+      numericId = parseInt(booking_id, 10);
+    }
+
+    // Validate that numericId is a valid number
+    if (isNaN(numericId) || numericId <= 0) {
+      console.error("❌ Invalid booking_id format:", { booking_id, numericId });
+      return res.status(400).json({ error: `Invalid booking_id format: ${booking_id}. Expected format: BK-XXXXXX or numeric id.` });
     }
 
     // Verify the booking exists (by numeric id)
@@ -36,8 +44,8 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       .single();
 
     if (bookingError || !bookingData) {
-      console.error("❌ Booking lookup error:", bookingError);
-      return res.status(400).json({ error: "Booking not found" });
+      console.error("❌ Booking lookup error:", { booking_id, numericId, error: bookingError });
+      return res.status(400).json({ error: `Booking not found for id: ${numericId}` });
     }
 
     // Insert the audit log with the display booking_id (TEXT)
