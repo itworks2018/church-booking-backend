@@ -22,50 +22,22 @@ router.post("/", requireAuth, requireAdmin, async (req, res) => {
       });
     }
 
-    // Try to find booking by booking_id (TEXT) first, then by numeric id
-    let bookingData, bookingError;
-    
-    // First attempt: Look up by booking_id TEXT value as-is
-    const { data: dataByBookingId, error: errorByBookingId } = await db
+    // Look up booking by booking_id (UUID)
+    const { data: bookingData, error: bookingError } = await db
       .from("bookings")
-      .select("id, booking_id")
+      .select("booking_id")
       .eq("booking_id", booking_id)
       .single();
 
-    if (!errorByBookingId && dataByBookingId) {
-      bookingData = dataByBookingId;
-      console.log("✅ Found booking by booking_id TEXT:", booking_id);
-    } else {
-      // Second attempt: Parse booking_id as numeric ID (e.g., "BK-000019" -> 19)
-      let numericId = booking_id;
-      if (booking_id.startsWith("BK-")) {
-        numericId = parseInt(booking_id.replace("BK-", ""), 10);
-      } else {
-        numericId = parseInt(booking_id, 10);
-      }
-
-      // Validate that numericId is a valid positive number
-      if (isNaN(numericId) || numericId <= 0) {
-        console.error("❌ Invalid booking_id format:", { booking_id, numericId });
-        return res.status(400).json({ error: `Invalid booking_id format: ${booking_id}. Expected format: BK-XXXXXX or numeric id.` });
-      }
-
-      // Look up by numeric id
-      const { data: dataByNumericId, error: errorByNumericId } = await db
-        .from("bookings")
-        .select("id, booking_id")
-        .eq("id", numericId)
-        .single();
-
-      if (errorByNumericId || !dataByNumericId) {
-        console.error("❌ Booking lookup error:", { booking_id, numericId, error: errorByNumericId });
-        return res.status(400).json({ error: `Booking not found for id: ${numericId}` });
-      }
-      bookingData = dataByNumericId;
+    if (bookingError || !bookingData) {
+      console.error("❌ Booking not found:", { booking_id, error: bookingError });
+      return res.status(404).json({ error: `Booking not found: ${booking_id}` });
     }
 
-    // Use the booking_id from database if available
-    const finalBookingId = bookingData?.booking_id || booking_id;
+    console.log("✅ Found booking:", booking_id);
+
+    // Use booking_id from database
+    const finalBookingId = bookingData.booking_id;
 
     // Insert the audit log with the final booking_id (TEXT)
     const { data, error } = await db

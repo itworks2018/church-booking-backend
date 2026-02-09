@@ -3,8 +3,8 @@ import { Resend } from "resend";
 // Initialize Resend email service
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Fallback email for testing
-const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@ccfsandoval.com";
+// Use Resend test domain for development
+const FROM_EMAIL = process.env.FROM_EMAIL || "onboarding@resend.dev";
 
 /**
  * Send email using Resend
@@ -30,7 +30,7 @@ export async function sendMail({ to, subject, html, text }) {
       subject: subject,
       html: html,
       text: text || "Please view this email in HTML format",
-      replyTo: process.env.REPLY_TO_EMAIL || "admin@ccfsandoval.com"
+      replyTo: process.env.REPLY_TO_EMAIL || "onboarding@resend.dev"
     });
 
     if (response.error) {
