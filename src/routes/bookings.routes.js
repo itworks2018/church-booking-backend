@@ -63,7 +63,7 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("status", "Pending"); // ✅ match enum exactly
+      .eq("status", "pending");
 
     if (error) return res.status(400).json({ error: error.message });
 
@@ -76,25 +76,23 @@ router.get("/pending", requireAuth, requireAdmin, async (req, res) => {
 // 🔹 Full list: Pending bookings (for table with actions)
 router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
   try {
+    console.log("📋 Fetching pending bookings...");
+    
     const { data, error } = await db
       .from("bookings")
-      .select(`
-        id,
-        user_id,
-        event_name,
-        purpose,
-        attendees,
-        venue,
-        start_datetime,
-        end_datetime,
-        additional_needs,
-        status,
-        created_at
-      `)
-      .eq("status", "Pending")
+      .select("*")
+      .eq("status", "pending")
       .order("start_datetime", { ascending: true });
 
-    if (error) return res.status(400).json({ error: error.message });
+    if (error) {
+      console.error("❌ Pending list query error:", error);
+      console.error("   Code:", error.code);
+      console.error("   Message:", error.message);
+      console.error("   Details:", error.details);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log(`✅ Found ${data?.length || 0} pending bookings`);
 
     // Generate display booking_id from numeric id
     const itemsWithDisplayId = data.map(item => ({
@@ -104,6 +102,8 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
 
     res.json({ items: itemsWithDisplayId, pendingCount: data.length });
   } catch (err) {
+    console.error("❌ Pending list fetch error:", err.message);
+    console.error("   Stack:", err.stack);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -115,8 +115,8 @@ router.get("/upcoming", requireAuth, requireAdmin, async (req, res) => {
     const { count, error } = await db
       .from("bookings")
       .select("*", { count: "exact", head: true })
-      .eq("status", "Approved")       // ✅ only approved requests
-      .gte("start_datetime", now);    // ✅ only future events
+      .eq("status", "approved")
+      .gte("start_datetime", now);
 
     if (error) return res.status(400).json({ error: error.message });
 
@@ -134,20 +134,8 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     
     const { data, error } = await db
       .from("bookings")
-      .select(`
-        id,
-        user_id,
-        event_name,
-        purpose,
-        attendees,
-        venue,
-        start_datetime,
-        end_datetime,
-        additional_needs,
-        status,
-        created_at
-      `)
-      .in("status", ["Approved", "Pending"])
+      .select("*")
+      .in("status", ["approved", "pending"])
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
 
@@ -177,20 +165,8 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
       .from("bookings")
-      .select(`
-        id,
-        user_id,
-        event_name,
-        purpose,
-        attendees,
-        venue,
-        start_datetime,
-        end_datetime,
-        additional_needs,
-        status,
-        created_at
-      `)
-      .in("status", ["Approved", "Rejected"])
+      .select("*")
+      .in("status", ["approved", "rejected"])
       .order("start_datetime", { ascending: true });
 
     if (error) return res.status(400).json({ error: error.message });

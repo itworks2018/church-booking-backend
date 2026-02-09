@@ -4,7 +4,7 @@ export const getAllBookings = async (req, res) => {
     const { data, error } = await db
       .from("bookings")
       .select("*")
-      .in("status", ["Pending", "Approved"])
+      .in("status", ["pending", "approved"])
       .order("start_datetime", { ascending: false });
 
     if (error) return res.status(400).json({ error: error.message });
@@ -83,7 +83,7 @@ export const createBooking = async (req, res) => {
           start_datetime,
           end_datetime,
           additional_needs,
-          status: "Pending"
+          status: "pending"
         }
       ])
       .select()
@@ -146,7 +146,7 @@ export const createBooking = async (req, res) => {
 
 export const updateBookingStatus = async (req, res) => {
   const { status } = req.body;
-  const allowed = ["Pending", "Approved", "Rejected"];
+  const allowed = ["pending", "approved", "rejected"];
 
   if (!allowed.includes(status))
     return res.status(400).json({ error: "Invalid status" });
@@ -184,7 +184,7 @@ export const updateBookingStatus = async (req, res) => {
     // Frontend calls logAuditAction BEFORE calling updateBookingStatus
 
     // If approved or rejected, send email to user
-    if ((status === "Approved" || status === "Rejected") && responseData?.user_id) {
+    if ((status === "approved" || status === "rejected") && responseData?.user_id) {
       // Fetch user email and booking details
       const { data: user, error: userError } = await supabase
         .from("users")
@@ -192,7 +192,7 @@ export const updateBookingStatus = async (req, res) => {
         .eq("user_id", responseData.user_id)
         .single();
       if (!userError && user?.email) {
-        const templateName = status === "Approved" ? "booking-approved" : "booking-rejected";
+        const templateName = status === "approved" ? "booking-approved" : "booking-rejected";
         const html = await renderEmailTemplate(templateName, {
           name: user.full_name || "User",
           event_name: responseData.event_name,
@@ -206,7 +206,7 @@ export const updateBookingStatus = async (req, res) => {
         });
         await sendMail({
           to: user.email,
-          subject: status === "Approved" ? "Booking Approved" : "Booking Rejected",
+          subject: status === "approved" ? "Booking Approved" : "Booking Rejected",
           html
         });
       }
