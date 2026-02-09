@@ -80,7 +80,7 @@ router.get("/pending/list", requireAuth, requireAdmin, async (req, res) => {
     
     const { data, error } = await db
       .from("bookings")
-      .select("*")
+      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
       .eq("status", "Pending")
       .order("start_datetime", { ascending: true });
 
@@ -144,7 +144,7 @@ router.get("/upcoming/list", requireAuth, requireAdmin, async (req, res) => {
     
     const { data, error } = await db
       .from("bookings")
-      .select("*")
+      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
       .in("status", ["Approved", "Pending"])
       .gte("start_datetime", now)
       .order("start_datetime", { ascending: true });
@@ -185,7 +185,7 @@ router.get("/approved/list", requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await db
       .from("bookings")
-      .select("*")
+      .select("id, event_name, purpose, attendees, venue, start_datetime, end_datetime, additional_needs, status, created_at, user_id")
       .in("status", ["Approved", "Rejected"])
       .order("start_datetime", { ascending: true });
 
