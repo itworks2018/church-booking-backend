@@ -86,29 +86,18 @@ router.get("/", requireAuth, requireAdmin, async (req, res) => {
     const bookingDisplayIds = [...new Set(auditLogs.map(log => log.booking_id).filter(Boolean))];
     const adminIds = [...new Set(auditLogs.map(log => log.admin_id).filter(Boolean))];
 
-    // Fetch booking details by extracting numeric IDs from display IDs
+    // Fetch booking details by UUID booking_id
     let bookingsMap = {};
     if (bookingDisplayIds.length > 0) {
-      // Extract numeric IDs from display booking IDs
-      const numericIds = bookingDisplayIds.map(displayId => {
-        if (displayId.startsWith("BK-")) {
-          return parseInt(displayId.replace("BK-", ""), 10);
-        }
-        return parseInt(displayId, 10);
-      });
-
       const { data: bookings, error: bookingsError } = await db
         .from("bookings")
-        .select("id, event_name, user_id")
-        .in("id", numericIds);
+        .select("booking_id, event_name, user_id")
+        .in("booking_id", bookingDisplayIds);
       
       if (bookings) {
-        // Map by display booking_id for lookup
+        // Map by booking_id (UUID) for lookup
         bookingsMap = Object.fromEntries(
-          bookings.map(b => {
-            const displayId = `BK-${String(b.id).padStart(6, "0")}`;
-            return [displayId, { ...b, booking_id: displayId }];
-          })
+          bookings.map(b => [b.booking_id, b])
         );
       }
       if (bookingsError) {
