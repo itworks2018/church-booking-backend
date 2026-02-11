@@ -1,29 +1,105 @@
-// Fetch all bookings (pending and approved) for all users
-export const getAllBookings = async (req, res) => {
-  try {
-    const { data, error } = await db
-      .from("bookings")
-      .select("*")
-      .in("status", ["Pending", "Approved"])
-      .order("start_datetime", { ascending: false });
-
-    if (error) return res.status(400).json({ error: error.message });
-    
-    // Generate display booking_id from numeric id
-    const itemsWithDisplayId = data.map(item => ({
-      ...item,
-      booking_id: `BK-${String(item.id).padStart(6, "0")}`
-    }));
-    
-    res.json(itemsWithDisplayId);
-  } catch (err) {
-    res.status(500).json({ error: "Server error" });
-  }
-};
 import { db } from "../config/supabase.js";
 import { sendMail } from "../utils/mailer.js";
 import { renderEmailTemplate } from "../utils/renderEmailTemplate.js";
 import { db as supabase } from "../config/supabase.js";
+
+// Helper function to get available time slots for a venue on a given date
+const getAvailableSlots = async (venue, requestedDate) => {
+  try {
+    // Get all approved bookings for this venue on the same date
+    const dateStart = new Date(requestedDate);
+    dateStart.setHours(0, 0, 0, 0);
+    
+    const dateEnd = new Date(requestedDate);
+    dateEnd.setHours(23, 59, 59, 999);
+
+    const { data: bookedSlots, error } = await db
+      .from("bookings")
+      .select("start_datetime, end_datetime")
+      .eq("venue", venue)
+      .eq("status", "Approved")
+      .gte("start_datetime", dateStart.toISOString())
+      .lte("end_datetime", dateEnd.toISOString())
+      .order("start_datetime", { ascending: true });
+
+    if (error) {
+      console.error("Available slots query error:", error);
+      return [];
+    }
+
+    // Define business hours (8 AM to 6 PM)
+    const businessHoursStart = 8;
+    const businessHoursEnd = 18;
+    const slotDurationHours = 1;
+
+    const availableSlots = [];
+    
+    // If no bookings, return all available slots
+    if (!bookedSlots || bookedSlots.length === 0) {
+      for (let hour = businessHoursStart; hour < businessHoursEnd; hour++) {
+        const slotStart = new Date(dateStart);
+        slotStart.setHours(hour, 0, 0, 0);
+        
+        const slotEnd = new Date(slotStart);
+        slotEnd.setHours(hour + slotDurationHours, 0, 0, 0);
+
+        availableSlots.push({
+          start_time: slotStart.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          end_time: slotEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+        });
+      }
+      return availableSlots;
+    }
+
+    // Find available gaps between booked slots
+    let currentTime = new Date(dateStart);
+    currentTime.setHours(businessHoursStart, 0, 0, 0);
+
+    for (const booking of bookedSlots) {
+      const bookingStart = new Date(booking.start_datetime);
+      
+      // Add slots before this booking
+      while (currentTime.getTime() + (slotDurationHours * 3600000) <= bookingStart.getTime()) {
+        const slotEnd = new Date(currentTime);
+        slotEnd.setHours(slotEnd.getHours() + slotDurationHours);
+
+        availableSlots.push({
+          start_time: currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+          end_time: slotEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+        });
+
+        currentTime.setHours(currentTime.getHours() + slotDurationHours);
+      }
+
+      // Move current time to after this booking
+      const bookingEnd = new Date(booking.end_datetime);
+      if (bookingEnd.getTime() > currentTime.getTime()) {
+        currentTime = bookingEnd;
+      }
+    }
+
+    // Add remaining slots until end of business hours
+    const endOfDay = new Date(dateStart);
+    endOfDay.setHours(businessHoursEnd, 0, 0, 0);
+
+    while (currentTime.getTime() + (slotDurationHours * 3600000) <= endOfDay.getTime()) {
+      const slotEnd = new Date(currentTime);
+      slotEnd.setHours(slotEnd.getHours() + slotDurationHours);
+
+      availableSlots.push({
+        start_time: currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+        end_time: slotEnd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+      });
+
+      currentTime.setHours(currentTime.getHours() + slotDurationHours);
+    }
+
+    return availableSlots.slice(0, 5); // Return top 5 available slots
+  } catch (err) {
+    console.error("Error calculating available slots:", err);
+    return [];
+  }
+};
 
 export const createBooking = async (req, res) => {
   try {
@@ -68,7 +144,19 @@ export const createBooking = async (req, res) => {
     }
     
     if (conflicts && conflicts.length > 0) {
-      return res.status(409).json({ error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue." });
+      // Get available slots for this venue on the requested date
+      const availableSlots = await getAvailableSlots(venue, start_datetime);
+      
+      return res.status(409).json({ 
+        error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue.",
+        conflictingBooking: {
+          venue: conflicts[0].venue,
+          date: new Date(conflicts[0].start_datetime).toLocaleDateString(),
+          time: `${new Date(conflicts[0].start_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - ${new Date(conflicts[0].end_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+        },
+        availableSlots: availableSlots,
+        message: "Available time slots for this venue and date:"
+      });
     }
 
     const { data, error } = await db
