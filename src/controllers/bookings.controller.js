@@ -3,6 +3,29 @@ import { sendMail } from "../utils/mailer.js";
 import { renderEmailTemplate } from "../utils/renderEmailTemplate.js";
 import { db as supabase } from "../config/supabase.js";
 
+// Fetch all bookings (pending and approved) for all users
+export const getAllBookings = async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from("bookings")
+      .select("*")
+      .in("status", ["Pending", "Approved"])
+      .order("start_datetime", { ascending: false });
+
+    if (error) return res.status(400).json({ error: error.message });
+    
+    // Generate display booking_id from numeric id
+    const itemsWithDisplayId = data.map(item => ({
+      ...item,
+      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+    }));
+    
+    res.json(itemsWithDisplayId);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 // Helper function to get available time slots for a venue on a given date
 const getAvailableSlots = async (venue, requestedDate) => {
   try {
