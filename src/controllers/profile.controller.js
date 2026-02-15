@@ -28,11 +28,22 @@ export const updateMyProfile = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
-    const { email, contact_number, role } = req.body;
+    // ✅ SECURITY: Only allow email and contact_number updates
+    // Users are NOT allowed to change their own role
+    const { email, contact_number } = req.body;
+
+    // Validate email format if provided
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
 
     const { data, error } = await supabase
       .from("users")
-      .update({ email, contact_number, role })
+      .update({ 
+        email, 
+        contact_number 
+        // role intentionally NOT included - cannot be changed by user
+      })
       .eq("user_id", req.user.id)
       .select()
       .single();
@@ -41,7 +52,8 @@ export const updateMyProfile = async (req, res) => {
 
     res.json({ message: "Profile updated", user: data });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    console.error("Profile update error:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 };
 

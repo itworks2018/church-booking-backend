@@ -1,5 +1,6 @@
 import { db, auth } from "../config/supabase.js";
 import jwt from "jsonwebtoken";
+import { validatePassword } from "../utils/passwordValidator.js";
 
 const { JWT_SECRET } = process.env;
 
@@ -15,6 +16,15 @@ export const signup = async (req, res) => {
   // Remove strict allowedRoles check since role is now text
   if (!full_name || !email || !contact_number || !password || !role)
     return res.status(400).json({ error: "All fields are required" });
+
+  // ✅ SECURITY: Validate password strength
+  const { isValid, errors } = validatePassword(password);
+  if (!isValid) {
+    return res.status(400).json({ 
+      error: "Password does not meet security requirements",
+      requirements: errors
+    });
+  }
 
   try {
     // 1) Create Supabase Auth user
