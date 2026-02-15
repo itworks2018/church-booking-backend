@@ -5,6 +5,7 @@ import usersRouter from "./users.routes.js";
 import metricsRouter from "./metrics.routes.js";
 import calendarRouter from "./calendar.routes.js";
 import auditLogsRouter from "./audit-logs.routes.js";
+import changeRequestsRouter from "./change-requests.routes.js";
 
 const router = Router();
 
@@ -15,5 +16,6 @@ router.use("/users", usersRouter);
 router.use("/metrics", metricsRouter);
 router.use("/calendar", calendarRouter);
 router.use("/audit-logs", auditLogsRouter);
+router.use("/change-requests", changeRequestsRouter);
 
 export default router;
