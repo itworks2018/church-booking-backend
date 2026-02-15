@@ -2,7 +2,7 @@
 
 create table if not exists public.change_requests (
   id bigserial primary key,
-  booking_id text references public.bookings(booking_id) on delete cascade,
+  booking_id uuid references public.bookings(booking_id) on delete cascade,
   user_id uuid references public.users(user_id) on delete set null,
   event_name text not null,
   description text not null,
