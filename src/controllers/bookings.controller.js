@@ -145,9 +145,9 @@ export const createBooking = async (req, res) => {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     
-    const { data: recentBookings, error: limitError } = await db
+    const { count: recentBookingsCount, error: limitError } = await db
       .from("bookings")
-      .select("id")
+      .select("*", { count: 'exact', head: true })
       .eq("user_id", req.user.id)
       .gte("created_at", sevenDaysAgo.toISOString());
     
@@ -156,7 +156,7 @@ export const createBooking = async (req, res) => {
       return res.status(500).json({ error: "Failed to check booking limit" });
     }
     
-    if (recentBookings && recentBookings.length >= 2) {
+    if (recentBookingsCount >= 2) {
       return res.status(400).json({ 
         error: "You have reached the maximum request for this week. Please inform the CCF Sandoval events team if additional request is needed (Subject for approval)" 
       });
