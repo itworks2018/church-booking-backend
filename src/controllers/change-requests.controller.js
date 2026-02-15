@@ -15,6 +15,23 @@ export const createChangeRequest = async (req, res) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
+    // Check if user already has a change request for this booking (max 1 per booking)
+    const { data: existingRequest, error: checkError } = await db
+      .from("change_requests")
+      .select("id")
+      .eq("booking_id", booking_id);
+    
+    if (checkError) {
+      console.error("Change request limit check error:", checkError);
+      return res.status(500).json({ message: "Failed to check change request limit" });
+    }
+    
+    if (existingRequest && existingRequest.length >= 1) {
+      return res.status(400).json({ 
+        message: "You have reached the limit for changing booking update request. For further assistance, please reach out to CCF Sandoval Events team for the request (Subject for approval)" 
+      });
+    }
+
     // Get booking details to include in the request
     const { data: booking, error: bookingError } = await db
       .from("bookings")

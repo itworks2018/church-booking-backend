@@ -141,6 +141,27 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ error: "Missing fields" });
     }
 
+    // Check booking limit (max 2 bookings per rolling 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const { data: recentBookings, error: limitError } = await db
+      .from("bookings")
+      .select("id")
+      .eq("user_id", req.user.id)
+      .gte("created_at", sevenDaysAgo.toISOString());
+    
+    if (limitError) {
+      console.error("❌ Booking limit check error:", limitError);
+      return res.status(500).json({ error: "Failed to check booking limit" });
+    }
+    
+    if (recentBookings && recentBookings.length >= 2) {
+      return res.status(400).json({ 
+        error: "You have reached the maximum request for this week. Please inform the CCF Sandoval events team if additional request is needed (Subject for approval)" 
+      });
+    }
+
     const start = new Date(start_datetime);
     const end = new Date(end_datetime);
 
