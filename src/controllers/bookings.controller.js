@@ -3,13 +3,13 @@ import { sendMail } from "../utils/mailer.js";
 import { renderEmailTemplate } from "../utils/renderEmailTemplate.js";
 import { db as supabase } from "../config/supabase.js";
 
-// Fetch all bookings (pending and approved) for all users
+// Fetch all bookings (pending, approved, and rejected) for all users
 export const getAllBookings = async (req, res) => {
   try {
     const { data, error } = await db
       .from("bookings")
       .select("*")
-      .in("status", ["Pending", "Approved"])
+      .in("status", ["Pending", "Approved", "Rejected"])
       .order("start_datetime", { ascending: false });
 
     if (error) return res.status(400).json({ error: error.message });
