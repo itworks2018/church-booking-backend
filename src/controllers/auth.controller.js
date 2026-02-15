@@ -100,7 +100,7 @@ export const login = async (req, res) => {
       .single();
 
     const token = signToken({
-      id: data.user.id,
+      user_id: data.user.id,
       email: data.user.email,
       role: profile?.role || "user",
     });
