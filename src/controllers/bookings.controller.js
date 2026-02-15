@@ -14,10 +14,10 @@ export const getAllBookings = async (req, res) => {
 
     if (error) return res.status(400).json({ error: error.message });
     
-    // Generate display booking_id from numeric id
+    // Preserve original UUID booking_id and add display format as separate field
     const itemsWithDisplayId = data.map(item => ({
       ...item,
-      booking_id: `BK-${String(item.id).padStart(6, "0")}`
+      booking_display_id: `BK-${String(item.id).padStart(6, "0")}`
     }));
     
     res.json(itemsWithDisplayId);
