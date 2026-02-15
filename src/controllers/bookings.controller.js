@@ -20,7 +20,7 @@ export const getAllBookings = async (req, res) => {
       booking_display_id: `BK-${String(item.id).padStart(6, "0")}`
     }));
     
-    res.json(itemsWithDisplayId);
+    res.json({ items: itemsWithDisplayId });
   } catch (err) {
     res.status(500).json({ error: "Server error" });
   }
