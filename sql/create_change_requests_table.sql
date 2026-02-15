@@ -6,7 +6,7 @@ create table if not exists public.change_requests (
   user_id uuid references public.users(user_id) on delete set null,
   event_name text not null,
   description text not null,
-  status text default 'Pending' check (status in ('Pending', 'Updated', 'Rejected')),
+  status text default 'Pending' check (status in ('Pending', 'Approved', 'Rejected')),
   admin_notes text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
