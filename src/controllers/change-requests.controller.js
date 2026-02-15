@@ -4,7 +4,7 @@ import { db } from "../config/supabase.js";
 export const createChangeRequest = async (req, res) => {
   try {
     const { booking_id, description } = req.body;
-    const user_id = req.user?.user_id;
+    const user_id = req.user?.id;
 
     if (!booking_id || !description) {
       return res.status(400).json({ message: "Booking ID and description are required" });
@@ -60,7 +60,7 @@ export const createChangeRequest = async (req, res) => {
 // ✅ Get user's change requests
 export const getUserChangeRequests = async (req, res) => {
   try {
-    const user_id = req.user?.user_id;
+    const user_id = req.user?.id;
 
     if (!user_id) {
       return res.status(401).json({ message: "User not authenticated" });
