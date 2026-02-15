@@ -1,4 +1,5 @@
 import { db } from "../config/supabase.js";
+import { sendChangeRequestStatusEmail } from "../utils/mailer.js";
 
 // ✅ Create a new change request
 export const createChangeRequest = async (req, res) => {
@@ -121,8 +122,8 @@ export const updateChangeRequestStatus = async (req, res) => {
       return res.status(403).json({ message: "Admin access required" });
     }
 
-    if (!status || !["Pending", "Updated", "Rejected"].includes(status)) {
-      return res.status(400).json({ message: "Invalid status. Must be 'Pending', 'Updated', or 'Rejected'" });
+    if (!status || !["Pending", "Approved", "Rejected"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status. Must be 'Pending', 'Approved', or 'Rejected'" });
     }
 
     // Update the change request
@@ -145,8 +146,34 @@ export const updateChangeRequestStatus = async (req, res) => {
       return res.status(404).json({ message: "Change request not found" });
     }
 
-    // TODO: Send email to user notifying them of the status update
-    // await sendChangeRequestStatusEmailToUser(updatedRequest[0]);
+    // Send email to user notifying them of the status update (only for Approved/Rejected)
+    if (status !== "Pending") {
+      try {
+        const changeRequest = updatedRequest[0];
+        
+        // Fetch user details to get email and name
+        const { data: user, error: userError } = await db
+          .from("users")
+          .select("email, full_name")
+          .eq("user_id", changeRequest.user_id)
+          .single();
+        
+        if (!userError && user) {
+          await sendChangeRequestStatusEmail({
+            userEmail: user.email,
+            userName: user.full_name,
+            eventName: changeRequest.event_name,
+            status: status,
+            adminNotes: admin_notes || "No additional notes provided."
+          });
+        } else {
+          console.warn("Failed to fetch user details for email notification:", userError);
+        }
+      } catch (emailErr) {
+        console.error("Error sending change request status email:", emailErr);
+        // Don't fail the request if email sending fails
+      }
+    }
 
     res.status(200).json({
       message: "Change request updated successfully",
