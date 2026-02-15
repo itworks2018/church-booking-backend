@@ -1,4 +1,4 @@
-import { supabase } from "../config/supabase.js";
+import { db } from "../config/supabase.js";
 
 // ✅ Create a new change request
 export const createChangeRequest = async (req, res) => {
@@ -15,7 +15,7 @@ export const createChangeRequest = async (req, res) => {
     }
 
     // Get booking details to include in the request
-    const { data: booking, error: bookingError } = await supabase
+    const { data: booking, error: bookingError } = await db
       .from("bookings")
       .select("event_name, booking_id")
       .eq("booking_id", booking_id)
@@ -26,7 +26,7 @@ export const createChangeRequest = async (req, res) => {
     }
 
     // Create the change request
-    const { data: changeRequest, error } = await supabase
+    const { data: changeRequest, error } = await db
       .from("change_requests")
       .insert([
         {
@@ -66,7 +66,7 @@ export const getUserChangeRequests = async (req, res) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    const { data: changeRequests, error } = await supabase
+    const { data: changeRequests, error } = await db
       .from("change_requests")
       .select("*")
       .eq("user_id", user_id)
@@ -93,7 +93,7 @@ export const getAllChangeRequests = async (req, res) => {
       return res.status(403).json({ message: "Admin access required" });
     }
 
-    const { data: changeRequests, error } = await supabase
+    const { data: changeRequests, error } = await db
       .from("change_requests")
       .select("*")
       .order("created_at", { ascending: false });
@@ -126,7 +126,7 @@ export const updateChangeRequestStatus = async (req, res) => {
     }
 
     // Update the change request
-    const { data: updatedRequest, error } = await supabase
+    const { data: updatedRequest, error } = await db
       .from("change_requests")
       .update({
         status,
@@ -168,7 +168,7 @@ export const deleteChangeRequest = async (req, res) => {
       return res.status(403).json({ message: "Admin access required" });
     }
 
-    const { error } = await supabase
+    const { error } = await db
       .from("change_requests")
       .delete()
       .eq("id", id);
