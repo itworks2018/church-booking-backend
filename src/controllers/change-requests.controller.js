@@ -158,20 +158,21 @@ export const updateChangeRequestStatus = async (req, res) => {
           .eq("user_id", changeRequest.user_id)
           .single();
         
-        if (!userError && user) {
+        // Only send email if user exists and has valid email
+        if (!userError && user && user.email) {
           await sendChangeRequestStatusEmail({
             userEmail: user.email,
-            userName: user.full_name,
+            userName: user.full_name || "User",
             eventName: changeRequest.event_name,
             status: status,
             adminNotes: admin_notes || "No additional notes provided."
           });
         } else {
-          console.warn("Failed to fetch user details for email notification:", userError);
+          console.warn("Cannot send email notification - missing user or email address:", { userError, hasUser: !!user, hasEmail: user?.email });
         }
       } catch (emailErr) {
         console.error("Error sending change request status email:", emailErr);
-        // Don't fail the request if email sending fails
+        // Don't fail the request if email sending fails - continue with response
       }
     }
 
