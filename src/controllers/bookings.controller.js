@@ -226,10 +226,24 @@ export const createBooking = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
-    // Generate display booking ID from the numeric id
+    // Generate display booking ID from the numeric id and persist to database
+    const bookingDisplayId = `BK-${String(data.id).padStart(6, "0")}`;
+    
+    const { data: updatedData, error: updateError } = await db
+      .from("bookings")
+      .update({ booking_id: bookingDisplayId })
+      .eq("id", data.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("❌ Update booking_id error:", updateError.message);
+      // Continue anyway - booking exists even if ID wasn't persisted
+    }
+
     const responseData = {
-      ...data,
-      booking_id: `BK-${String(data.id).padStart(6, "0")}`
+      ...(updatedData || data),
+      booking_id: bookingDisplayId
     };
 
     console.log("✅ Booking created - ID:", responseData.booking_id);
