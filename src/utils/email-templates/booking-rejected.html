@@ -1,31 +1,133 @@
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking Rejected</title>
     <style>
-      .email-body {
+      body {
         font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 8px 8px 0 0;
+        text-align: center;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+      }
+      .content {
+        background: #f9fafb;
+        padding: 30px;
+        border-radius: 0 0 8px 8px;
+      }
+      .status-box {
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        padding: 16px;
+        margin: 20px 0;
+        border-radius: 4px;
+      }
+      .status-label {
+        color: #ef4444;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .details {
+        background: white;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 4px;
+        border: 1px solid #e5e7eb;
+      }
+      .detail-row {
+        padding: 10px 0;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+      .detail-label {
+        font-weight: bold;
+        color: #667eea;
+        display: inline-block;
+        width: 140px;
+      }
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: #999;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
       }
     </style>
   </head>
-  <body class="email-body">
-    <h2>Booking Rejected</h2>
-    <p>Hi {{name}},</p>
-    <p>We regret to inform you that your booking request could not be approved due to a schedule conflict.</p>
-    <h4>Booking Summary:</h4>
-    <ul>
-      <li><b>Event:</b> {{event_name}}</li>
-      <li><b>Purpose:</b> {{purpose}}</li>
-      <li><b>Venue:</b> {{venue}}</li>
-      <li><b>Attendees:</b> {{attendees}}</li>
-      <li><b>Start:</b> {{start_datetime}}</li>
-      <li><b>End:</b> {{end_datetime}}</li>
-      <li><b>Additional Needs:</b> {{additional_needs}}</li>
-      <li><b>Requested At:</b> {{requested_at}}</li>
-    </ul>
-    <p>You may try booking another schedule. If you have questions, please contact us.</p>
-    <br>
-    <p>Regards,<br>CCF Sandoval Events</p>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Booking Request Status</h1>
+      </div>
+      <div class="content">
+        <p>Dear <strong>{{name}}</strong>,</p>
+        
+        <p>Thank you for submitting a booking request. Unfortunately, we were unable to approve your request at this time.</p>
+        
+        <div class="status-box">
+          <div class="status-label">❌ REJECTED</div>
+        </div>
+        
+        <div class="details">
+          <div class="detail-row">
+            <span class="detail-label">Booking ID:</span> {{booking_id}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Event Name:</span> {{event_name}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Purpose:</span> {{purpose}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Venue:</span> {{venue}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Attendees:</span> {{attendees}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Start Date/Time:</span> {{start_datetime}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">End Date/Time:</span> {{end_datetime}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Additional Needs:</span> {{additional_needs}}
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Submitted At:</span> {{requested_at}}
+          </div>
+        </div>
+        
+        <p>This decision was made due to scheduling conflicts or other facility constraints. We encourage you to try booking an alternative date. If you have any questions or would like to discuss this further, please contact us.</p>
+        
+        <p>Best regards,<br>
+        Church Calendar & Facility Booking System<br>
+        CCF Sandoval</p>
+        
+        <div class="footer">
+          <p>This is an automated message. Please do not reply to this email.</p>
+          <p>&copy; 2026 CCF Sandoval. All rights reserved.</p>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
