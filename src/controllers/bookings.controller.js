@@ -245,6 +245,7 @@ export const createBooking = async (req, res) => {
       try {
         const html = await renderEmailTemplate("booking-request", {
           name: user.full_name || "User",
+          booking_id: responseData.booking_id,
           event_name,
           purpose,
           venue,
@@ -319,6 +320,7 @@ export const updateBookingStatus = async (req, res) => {
         const templateName = status === "Approved" ? "booking-approved" : "booking-rejected";
         const html = await renderEmailTemplate(templateName, {
           name: user.full_name || "User",
+          booking_id: responseData.booking_id,
           event_name: responseData.event_name,
           purpose: responseData.purpose,
           venue: responseData.venue,

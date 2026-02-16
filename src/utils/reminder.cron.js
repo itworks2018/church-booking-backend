@@ -30,6 +30,7 @@ cron.schedule("0 * * * *", async () => {
     if (booking.users?.email) {
       const html = await renderEmailTemplate("booking-reminder", {
         name: booking.users.full_name || "User",
+        booking_id: booking.booking_id,
         event_name: booking.event_name,
         venue: booking.venue,
         start_datetime: booking.start_datetime,
