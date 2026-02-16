@@ -141,25 +141,27 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ error: "Missing fields" });
     }
 
-    // Check booking limit (max 2 bookings per rolling 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    const { count: recentBookingsCount, error: limitError } = await db
-      .from("bookings")
-      .select("*", { count: 'exact', head: true })
-      .eq("user_id", req.user.id)
-      .gte("created_at", sevenDaysAgo.toISOString());
-    
-    if (limitError) {
-      console.error("❌ Booking limit check error:", limitError);
-      return res.status(500).json({ error: "Failed to check booking limit" });
-    }
-    
-    if (recentBookingsCount >= 2) {
-      return res.status(400).json({ 
-        error: "You have reached the maximum request for this week. Please inform the CCF Sandoval events team if additional request is needed (Subject for approval)" 
-      });
+    // Check booking limit only for regular users (not admins)
+    if (req.user.role !== "admin") {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const { count: recentBookingsCount, error: limitError } = await db
+        .from("bookings")
+        .select("*", { count: 'exact', head: true })
+        .eq("user_id", req.user.id)
+        .gte("created_at", sevenDaysAgo.toISOString());
+      
+      if (limitError) {
+        console.error("❌ Booking limit check error:", limitError);
+        return res.status(500).json({ error: "Failed to check booking limit" });
+      }
+      
+      if (recentBookingsCount >= 2) {
+        return res.status(400).json({ 
+          error: "You have reached the maximum request for this week. Please inform the CCF Sandoval events team if additional request is needed (Subject for approval)" 
+        });
+      }
     }
 
     const start = new Date(start_datetime);
