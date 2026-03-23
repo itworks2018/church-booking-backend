@@ -76,7 +76,7 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// ✅ SECURITY: Stricter rate limiter for sensitive operations
+// ✅ SECURITY: Stricter rat  for sensitive operations
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 20, // 20 requests per IP

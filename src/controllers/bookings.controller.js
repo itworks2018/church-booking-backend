@@ -197,8 +197,8 @@ export const createBooking = async (req, res) => {
         error: "This venue is already booked for the selected date and time. Please choose a different schedule or venue.",
         conflictingBooking: {
           venue: conflicts[0].venue,
-          date: new Date(conflicts[0].start_datetime).toLocaleDateString(),
-          time: `${new Date(conflicts[0].start_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} - ${new Date(conflicts[0].end_datetime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`
+          date: new Date(conflicts[0].start_datetime).toLocaleDateString('en-PH', { timeZone: 'Asia/Manila' }),
+          time: `${new Date(conflicts[0].start_datetime).toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: true })} - ${new Date(conflicts[0].end_datetime).toLocaleTimeString('en-PH', { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', hour12: true })}`
         },
         availableSlots: availableSlots,
         message: "Available time slots for this venue and date:"
