@@ -50,7 +50,7 @@ if (!JWT_SECRET) {
 const allowedOrigins = [
   "http://localhost:5500",
   "http://localhost:5173",
-  "https://church-booking-frontend-gamma.vercel.app",
+  "https://ccfsandovalevents.vercel.app",
   "https://church-booking-frontend-git-main-jey-tutorials-projects.vercel.app"
 ];
 
